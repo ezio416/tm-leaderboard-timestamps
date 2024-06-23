@@ -221,11 +221,8 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ top = Json::Parse(msg);
-    const Json::Type topType = top.GetType();
-    if (topType != Json::Type::Object) {
-        warn("top is a(n) " + tostring(topType) + ", not an Object");
+    if (!CheckJsonType(top, Json::Type::Object, "top"))
         return;
-    }
 
     if (!top.HasKey("tops")) {
         warn("tops missing key 'tops'");
@@ -233,11 +230,8 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ tops = top["tops"];
-    const Json::Type topsType = tops.GetType();
-    if (topsType != Json::Type::Array) {
-        warn("tops is a(n) " + tostring(topType) + ", not an Array");
+    if (!CheckJsonType(tops, Json::Type::Array, "tops"))
         return;
-    }
 
     if (tops.Length == 0) {
         warn("tops is empty");
@@ -246,11 +240,8 @@ void GetRecordsAsync() {
 
     for (uint i = 0; i < tops.Length; i++) {
         Json::Value@ region = tops[i];
-        const Json::Type regionType = region.GetType();
-        if (regionType != Json::Type::Object) {
-            warn("region " + i + " is a(n) " + tostring(regionType) + ", not an Object");
+        if (!CheckJsonType(region, Json::Type::Object, "region " + i))
             continue;
-        }
 
         if (!region.HasKey("top")) {
             warn("region " + i + " missing key 'top'");
@@ -258,19 +249,13 @@ void GetRecordsAsync() {
         }
 
         Json::Value@ regionTop = region["top"];
-        const Json::Type regionTopType = regionTop.GetType();
-        if (regionTopType != Json::Type::Array) {
-            warn("regionTop " + i + " is a(n) " + tostring(topType) + ", not an Array");
+        if (!CheckJsonType(regionTop, Json::Type::Array, "regionTop"))
             continue;
-        }
 
         for (uint j = 0; j < regionTop.Length; j++) {
             Json::Value@ regionTopRecord = regionTop[j];
-            const Json::Type regionTopRecordType = regionTopRecord.GetType();
-            if (regionTopRecordType != Json::Type::Object) {
-                warn("regionTopRecord " + i + " " + j + "is a(n) " + tostring(regionTopRecordType) + ", not an Object");
+            if (!CheckJsonType(regionTopRecord, Json::Type::Object, "regionTopRecord " + i + " " + j))
                 continue;
-            }
 
             if (!regionTopRecord.HasKey("accountId")) {
                 warn("regionTopRecord " + i + " " + j + " missing key 'accountId'");
@@ -321,11 +306,8 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ mapInfo = Json::Parse(msg);
-    const Json::Type mapInfoType = mapInfo.GetType();
-    if (mapInfoType != Json::Type::Array) {
-        warn("mapInfo is a(n) " + tostring(mapInfoType) + ", not an Array");
+    if (!CheckJsonType(mapInfo, Json::Type::Array, "mapInfo"))
         return;
-    }
 
     if (mapInfo.Length == 0) {
         warn("mapInfo is empty");
@@ -333,11 +315,8 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ map = mapInfo[0];
-    const Json::Type mapType = map.GetType();
-    if (mapType != Json::Type::Object) {
-        warn("mapInfo is a(n) " + tostring(mapType) + ", not an Object");
+    if (!CheckJsonType(map, Json::Type::Object, "map"))
         return;
-    }
 
     if (!map.HasKey("mapId")) {
         warn("map missing key 'mapId'");
@@ -364,11 +343,8 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ records = Json::Parse(msg);
-    const Json::Type recordsType = records.GetType();
-    if (recordsType != Json::Type::Array) {
-        warn("records is a(n) " + tostring(recordsType) + ", not an Array");
+    if (!CheckJsonType(records, Json::Type::Array, "records"))
         return;
-    }
 
     if (records.Length == 0) {
         warn("records is empty");
@@ -377,11 +353,8 @@ void GetRecordsAsync() {
 
     for (uint i = 0; i < records.Length; i++) {
         Json::Value@ record = records[i];
-        const Json::Type recordType = record.GetType();
-        if (recordType != Json::Type::Object) {
-            warn("record " + i + " is a(n) " + tostring(recordType) + ", not an Object");
+        if (!CheckJsonType(record, Json::Type::Object, "record " + i))
             continue;
-        }
 
         if (!record.HasKey("accountId")) {
             warn("record " + i + " missing key 'accountId'");
@@ -400,8 +373,25 @@ void GetRecordsAsync() {
 
         Account@ account = cast<Account@>(accountsById[accountId]);
         account.timestamp = timestamp;
-        print(account);
+        // print(account);
     }
+
+    print("done");
+}
+
+bool CheckJsonType(Json::Value@ value, Json::Type desired, const string &in name) {
+    if (value is null) {
+        warn(name + " is null");
+        return false;
+    }
+
+    const Json::Type type = value.GetType();
+    if (type != desired) {
+        warn(name + " is a(n) " + tostring(type) + ", not a(n) " + tostring(desired));
+        return false;
+    }
+
+    return true;
 }
 
 string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minute = false) {
