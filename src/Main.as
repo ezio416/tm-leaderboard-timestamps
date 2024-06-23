@@ -168,11 +168,15 @@ void Render() {
     const vec2 mousePos = UI::GetMousePos();
     UI::SetNextWindowPos(int((mousePos.x + 5) / scale), int((mousePos.y + 5) / scale), UI::Cond::Always);
     if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoTitleBar)) {
-        UI::Text(name);
+        // UI::Text(name);
 
         if (accountsByName.Exists(name)) {
             Account@ account = cast<Account@>(accountsByName[name]);
-            UI::Text(tostring(account));
+            if (account.timestamp > 0) {
+                UI::Text(UnixToIso(account.timestamp));
+                UI::Text(FormatSeconds(Time::Stamp - account.timestamp) + " ago");
+            } else
+                UI::Text("...");
         } else
             UI::Text("...");
     }
@@ -294,6 +298,11 @@ void GetRecordsAsync() {
         }
     }
 
+    // surround
+    // club
+    // club vip
+    // club surround?
+
     sleep(500);
     print("getting map info");
     @req = NadeoServices::Get(
@@ -395,6 +404,23 @@ void GetRecordsAsync() {
     }
 }
 
+string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minute = false) {
+    int minutes = seconds / 60;
+    seconds %= 60;
+    int hours = minutes / 60;
+    minutes %= 60;
+    int days = hours / 24;
+    hours %= 24;
+
+    if (days > 0)
+        return days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+    if (hours > 0)
+        return (day ? "0d " : "") + hours + "h " + minutes + "m " + seconds + "s";
+    if (minutes > 0)
+        return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m " + seconds + "s";
+    return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
+}
+
 // courtesy of MisfitMaid
 int64 IsoToUnix(const string &in inTime) {
     SQLite::Statement@ s = timeDB.Prepare("SELECT unixepoch(?) as x");
@@ -403,4 +429,8 @@ int64 IsoToUnix(const string &in inTime) {
     s.NextRow();
     s.NextRow();
     return s.GetColumnInt64("x");
+}
+
+string UnixToIso(uint timestamp) {
+    return Time::FormatString("%Y-%m-%d \\$AAA@ \\$G%H:%M:%S \\$AAA(%a)\\$G", timestamp);
 }
