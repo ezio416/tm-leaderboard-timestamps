@@ -82,7 +82,14 @@ void Render() {
     )
         return;
 
-    if (UI::Begin(title, S_Enabled, UI::WindowFlags::None)) {
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
+    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+
+    if (CMAP is null || CMAP.UILayers.Length == 0)
+        return;
+
+    if (UI::Begin(title, S_Enabled, UI::WindowFlags::AlwaysAutoResize)) {
         if (UI::Button("get records"))
             startnew(GetRecordsAsync);
 
@@ -97,13 +104,6 @@ void Render() {
         }
     }
     UI::End();
-
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
-    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
-
-    if (CMAP is null || CMAP.UILayers.Length == 0)
-        return;
 
     CGameManialinkPage@ RecordsTable;
 
@@ -187,6 +187,8 @@ void GetRecordsAsync() {
     accountsById.DeleteAll();
     accountsByName.DeleteAll();
 
+    const uint64 waitTime = 500;
+
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
     if (
         App.RootMap is null
@@ -203,8 +205,12 @@ void GetRecordsAsync() {
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
-    sleep(500);
-    print("getting tops");
+////////////////////////////////////////////////////////////////////////////////
+// top
+////////////////////////////////////////////////////////////////////////////////
+
+    sleep(waitTime);
+    print("getting top");
     Net::HttpRequest@ req = NadeoServices::Get(
         audienceLive,
         NadeoServices::BaseURLLive() + "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top"
@@ -214,18 +220,17 @@ void GetRecordsAsync() {
         yield();
 
     int code = req.ResponseCode();
-    string msg = req.String();
     if (code != 200) {
-        warn("req (top): code: " + code + " | error: " + req.Error() + " | resp: " + msg);
+        warn("req (top): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    Json::Value@ top = Json::Parse(msg);
+    Json::Value@ top = req.Json();
     if (!CheckJsonType(top, Json::Type::Object, "top"))
         return;
 
     if (!top.HasKey("tops")) {
-        warn("tops missing key 'tops'");
+        warn("top missing key 'tops'");
         return;
     }
 
@@ -283,12 +288,199 @@ void GetRecordsAsync() {
         }
     }
 
-    // surround
-    // club
-    // club vip
-    // club surround?
+////////////////////////////////////////////////////////////////////////////////
+// surround
+////////////////////////////////////////////////////////////////////////////////
 
-    sleep(500);
+    sleep(waitTime);
+    print("getting surround");
+    @req = NadeoServices::Get(
+        audienceLive,
+        NadeoServices::BaseURLLive() + "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1"
+    );
+    req.Start();
+    while (!req.Finished())
+        yield();
+
+    code = req.ResponseCode();
+    if (code != 200) {
+        warn("req (surround): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    @top = req.Json();
+    if (!CheckJsonType(top, Json::Type::Object, "top"))
+        return;
+
+    if (!top.HasKey("tops")) {
+        warn("top (surround) missing key 'tops'");
+        return;
+    }
+
+    @tops = top["tops"];
+    if (!CheckJsonType(tops, Json::Type::Array, "tops"))
+        return;
+
+    if (tops.Length == 0)
+        warn("tops (surround) is empty");
+    else {
+        for (uint i = 0; i < tops.Length; i++) {
+            Json::Value@ region = tops[i];
+            if (!CheckJsonType(region, Json::Type::Object, "region " + i))
+                continue;
+
+            if (!region.HasKey("top")) {
+                warn("region " + i + " (surround) missing key 'top'");
+                continue;
+            }
+
+            Json::Value@ regionTop = region["top"];
+            if (!CheckJsonType(regionTop, Json::Type::Array, "regionTop"))
+                continue;
+
+            for (uint j = 0; j < regionTop.Length; j++) {
+                Json::Value@ regionTopRecord = regionTop[j];
+                if (!CheckJsonType(regionTopRecord, Json::Type::Object, "regionTopRecord " + i + " " + j))
+                    continue;
+
+                if (!regionTopRecord.HasKey("accountId")) {
+                    warn("regionTopRecord " + i + " " + j + " (surround) missing key 'accountId'");
+                    continue;
+                }
+
+                const string accountId = string(regionTopRecord["accountId"]);
+
+                if (!regionTopRecord.HasKey("score")) {
+                    warn("regionTopRecord " + i + " " + j + " (surround) missing key 'score'");
+                    continue;
+                }
+
+                const int score = int(regionTopRecord["score"]);
+
+                // print("accountId " + accountId + " has score " + Time::Format(score));
+
+                if (accountsById.Exists(accountId)) {
+                    Account@ account = cast<Account@>(accountsById[accountId]);
+                    account.score = score;
+                } else {
+                    accountsById[accountId] = Account(accountId, score);
+                    accountsQueue.InsertLast(accountId);
+                }
+            }
+        }
+    }
+
+////////////////////////////////////////////////////////////////////////////////
+// pinned club
+////////////////////////////////////////////////////////////////////////////////
+
+    sleep(waitTime);
+    print("getting club info");
+    @req = NadeoServices::Get(
+        audienceLive,
+        NadeoServices::BaseURLLive() + "/api/token/club/player/info"
+    );
+    req.Start();
+    while (!req.Finished())
+        yield();
+
+    code = req.ResponseCode();
+    if (code != 200) {
+        warn("req (club info): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ clubInfo = req.Json();
+    if (!CheckJsonType(clubInfo, Json::Type::Object, "club info"))
+        return;
+
+    if (!clubInfo.HasKey("pinnedClub")) {
+        warn("clubInfo missing key 'pinnedClub'");
+        return;
+    }
+
+    const uint pinned = uint(clubInfo["pinnedClub"]);
+    print("pinned club: " + pinned);
+
+    if (pinned > 0) {
+////////////////////////////////////////////////////////////////////////////////
+// club top
+////////////////////////////////////////////////////////////////////////////////
+
+        sleep(waitTime);
+        print("getting club top");
+        @req = NadeoServices::Get(
+            audienceLive,
+            NadeoServices::BaseURLLive() + "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinned + "/top"
+        );
+        req.Start();
+        while (!req.Finished())
+            yield();
+
+        code = req.ResponseCode();
+        if (code != 200) {
+            warn("req (club top): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+            return;
+        }
+
+        Json::Value@ club = req.Json();
+        if (!CheckJsonType(club, Json::Type::Object, "club"))
+            return;
+
+        if (!club.HasKey("top")) {
+            warn("club missing key 'top'");
+            return;
+        }
+
+        @top = club["top"];
+        if (!CheckJsonType(top, Json::Type::Array, "top (club)"))
+            return;
+
+        if (top.Length == 0)
+            warn("top (club) is empty");
+        else {
+            for (uint i = 0; i < top.Length; i++) {
+                Json::Value@ clubTopRecord = top[i];
+                if (!CheckJsonType(clubTopRecord, Json::Type::Object, "clubTopRecord " + i))
+                    continue;
+
+                if (!clubTopRecord.HasKey("accountId")) {
+                    warn("clubTopRecord " + i + " missing key 'accountId'");
+                    continue;
+                }
+
+                const string accountId = string(clubTopRecord["accountId"]);
+
+                if (!clubTopRecord.HasKey("score")) {
+                    warn("clubTopRecord " + i + " missing key 'score'");
+                    continue;
+                }
+
+                const int score = int(clubTopRecord["score"]);
+
+                // print("accountId " + accountId + " has score " + Time::Format(score));
+
+                if (accountsById.Exists(accountId)) {
+                    Account@ account = cast<Account@>(accountsById[accountId]);
+                    account.score = score;
+                } else {
+                    accountsById[accountId] = Account(accountId, score);
+                    accountsQueue.InsertLast(accountId);
+                }
+            }
+        }
+    } else
+        print("no pinned club");
+
+    // club surround
+    // club vip
+    // player vip
+
+////////////////////////////////////////////////////////////////////////////////
+// map info
+////////////////////////////////////////////////////////////////////////////////
+
+    sleep(waitTime);
     print("getting map info");
     @req = NadeoServices::Get(
         audienceCore,
@@ -299,13 +491,12 @@ void GetRecordsAsync() {
         yield();
 
     code = req.ResponseCode();
-    msg = req.String();
     if (code != 200) {
-        warn("req (map info): code: " + code + " | error: " + req.Error() + " | resp: " + msg);
+        warn("req (map info): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    Json::Value@ mapInfo = Json::Parse(msg);
+    Json::Value@ mapInfo = req.Json();
     if (!CheckJsonType(mapInfo, Json::Type::Array, "mapInfo"))
         return;
 
@@ -325,7 +516,11 @@ void GetRecordsAsync() {
 
     const string mapId = string(map["mapId"]);
 
-    sleep(500);
+////////////////////////////////////////////////////////////////////////////////
+// records
+////////////////////////////////////////////////////////////////////////////////
+
+    sleep(waitTime);
     print("getting records");
     @req = NadeoServices::Get(
         audienceCore,
@@ -336,13 +531,12 @@ void GetRecordsAsync() {
         yield();
 
     code = req.ResponseCode();
-    msg = req.String();
     if (code != 200) {
-        warn("req (records): code: " + code + " | error: " + req.Error() + " | resp: " + msg);
+        warn("req (records): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    Json::Value@ records = Json::Parse(msg);
+    Json::Value@ records = req.Json();
     if (!CheckJsonType(records, Json::Type::Array, "records"))
         return;
 
