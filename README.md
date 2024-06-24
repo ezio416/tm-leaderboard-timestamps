@@ -14,6 +14,7 @@ There are also settings available to customize how the displayed tooltip appears
 
 Known issues:
 - If someone is knocked off of the records panel (someone else drove a better time than them) and this plugin is refreshed without the records panel being refreshed, their timestamp will no longer be shown.
+- If your pinned club has many VIPS (like 180+) then a request will probably fail.
 
 <!-- ![Signed](https://img.shields.io/badge/Signed-Yes-00AA00) -->
 <!-- ![Signed](https://img.shields.io/badge/Signed-School_Mode-CC1199) -->
