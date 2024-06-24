@@ -211,8 +211,8 @@ void GetTimestampsAsync() {
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
-    GetTopAsync();
-    GetSurroundAsync();
+    GetRegionsTopAsync();
+    GetRegionsSurroundAsync();
     GetPlayerClubInfoAsync();
     GetClubTopAsync();
     GetClubSurroundAsync();
@@ -486,11 +486,10 @@ void GetRecordsAsync() {
     trace(funcName + ": success");
 }
 
-void GetSurroundAsync() {
-    const string funcName = "GetSurroundAsync";
+void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     trace(funcName + ": starting");
 
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1");
+    Net::HttpRequest@ req = GetLiveAsync(endpoint);
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -552,70 +551,12 @@ void GetSurroundAsync() {
     trace(funcName + ": success");
 }
 
-void GetTopAsync() {
-    const string funcName = "GetTopAsync";
-    trace(funcName + ": starting");
+void GetRegionsSurroundAsync() {
+    GetRegionsAsync("GetRegionsSurroundAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1");
+}
 
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top");
-
-    const int code = req.ResponseCode();
-    if (code != 200) {
-        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
-        return;
-    }
-
-    Json::Value@ parsed = req.Json();
-    if (!JsonIsObject(parsed, funcName + "+ parsed"))
-        return;
-
-    if (!parsed.HasKey("tops")) {
-        warn(funcName + ": parsed missing key 'tops'");
-        return;
-    }
-
-    Json::Value@ tops = parsed["tops"];
-    if (!JsonIsArray(tops, funcName + ": tops"))
-        return;
-
-    if (tops.Length == 0) {
-        warn(funcName + ": tops is empty");
-        return;
-    }
-
-    for (uint i = 0; i < tops.Length; i++) {
-        Json::Value@ region = tops[i];
-        if (!JsonIsObject(region, funcName + ": region " + i))
-            continue;
-
-        if (!region.HasKey("top")) {
-            warn(funcName + ": region " + i + " missing key 'top'");
-            continue;
-        }
-
-        Json::Value@ regionTop = region["top"];
-        if (!JsonIsArray(regionTop, funcName + ": regionTop " + i))
-            continue;
-
-        for (uint j = 0; j < regionTop.Length; j++) {
-            Json::Value@ record = regionTop[j];
-            if (!JsonIsObject(record, funcName + ": record " + i + " " + j))
-                continue;
-
-            if (!record.HasKey("accountId")) {
-                warn(funcName + ": record " + i + " " + j + " missing key 'accountId'");
-                continue;
-            }
-
-            const string accountId = string(record["accountId"]);
-
-            if (!accountsById.Exists(accountId)) {
-                accountsById[accountId] = Account(accountId);
-                accountsQueue.InsertLast(accountId);
-            }
-        }
-    }
-
-    trace(funcName + ": success");
+void GetRegionsTopAsync() {
+    GetRegionsAsync("GetRegionsTopAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top");
 }
 
 void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
