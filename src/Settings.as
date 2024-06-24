@@ -43,6 +43,14 @@ void Settings_General() {
 
     S_Recency = UI::Checkbox("Show recency", S_Recency);
     HoverTooltipSetting("How long ago run was driven");
+
+    UI::Separator();
+
+    UI::BeginDisabled(getting);
+    if (UI::Button(Icons::Refresh + " Force refresh"))
+        startnew(GetTimestampsAsync);
+    UI::EndDisabled();
+    HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 }
 
 void HoverTooltipSetting(const string &in msg) {
