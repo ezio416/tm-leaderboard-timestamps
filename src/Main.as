@@ -139,15 +139,8 @@ void Render() {
 void RenderMenu() {
     menuOpen = true;
 
-    if (canViewRecords && UI::BeginMenu(title)) {
-        if (UI::MenuItem(Icons::Check + " Enabled", "", S_Enabled))
-            S_Enabled = !S_Enabled;
-
-        if (UI::MenuItem((getting ? "\\$AAA" : "") + Icons::Refresh + " Force Refresh", "", false, !getting))
-            startnew(GetTimestampsAsync);
-
-        UI::EndMenu();
-    }
+    if (canViewRecords && UI::MenuItem(title, "", S_Enabled))
+        S_Enabled = !S_Enabled;
 }
 
 void GetTimestampsAsync() {
