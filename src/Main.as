@@ -6,6 +6,7 @@ dictionary@       accountsByName = dictionary();
 string[]          accountsQueue;
 const string      audienceCore   = "NadeoServices";
 const string      audienceLive   = "NadeoLiveServices";
+bool              getting        = false;
 bool              hasClubVip     = false;
 bool              hasPlayerVip   = false;
 string            mapUid;
@@ -68,8 +69,15 @@ void Main() {
 void RenderMenu() {
     menuOpen = true;
 
-    if (UI::MenuItem(title, "", S_Enabled))
-        S_Enabled = !S_Enabled;
+    if (UI::BeginMenu(title)) {
+        if (UI::MenuItem(Icons::Check + " Enabled", "", S_Enabled))
+            S_Enabled = !S_Enabled;
+
+        if (UI::MenuItem((getting ? "\\$AAA" : "") + Icons::Refresh + " Force Refresh", "", false, !getting))
+            startnew(GetTimestampsAsync);
+
+        UI::EndMenu();
+    }
 }
 
 void Render() {
@@ -83,21 +91,21 @@ void Render() {
     if (CMAP is null || CMAP.UILayers.Length == 0)
         return;
 
-    if (UI::Begin(title, S_Enabled, UI::WindowFlags::AlwaysAutoResize)) {
-        if (UI::Button("get records"))
-            startnew(GetTimestampsAsync);
+    // if (UI::Begin(title, S_Enabled, UI::WindowFlags::AlwaysAutoResize)) {
+    //     if (UI::Button("get records"))
+    //         startnew(GetTimestampsAsync);
 
-        UI::Text("queue: " + accountsQueue.Length);
+    //     UI::Text("queue: " + accountsQueue.Length);
 
-        string[]@ names = accountsByName.GetKeys();
+    //     string[]@ names = accountsByName.GetKeys();
 
-        for (uint i = 0; i < names.Length; i++) {
-            const string name = names[i];
-            Account@ account = cast<Account@>(accountsByName[name]);
-            UI::Text(tostring(account));
-        }
-    }
-    UI::End();
+    //     for (uint i = 0; i < names.Length; i++) {
+    //         const string name = names[i];
+    //         Account@ account = cast<Account@>(accountsByName[name]);
+    //         UI::Text(tostring(account));
+    //     }
+    // }
+    // UI::End();
 
     if (menuOpen)
         return;
@@ -165,8 +173,6 @@ void Render() {
     const vec2 mousePos = UI::GetMousePos();
     UI::SetNextWindowPos(int((mousePos.x + 5) / scale), int((mousePos.y + 5) / scale), UI::Cond::Always);
     if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoTitleBar)) {
-        // UI::Text(name);
-
         if (accountsByName.Exists(name)) {
             Account@ account = cast<Account@>(accountsByName[name]);
             if (account.timestamp > 0) {
@@ -181,8 +187,12 @@ void Render() {
 }
 
 void GetTimestampsAsync() {
+    while (getting)
+        yield();
+
     const string funcName = "GetTimestampsAsync";
     trace(funcName + ": starting");
+    getting = true;
 
     Reset();
 
@@ -191,8 +201,10 @@ void GetTimestampsAsync() {
         App.RootMap is null
         || App.CurrentPlayground is null
         || App.Editor !is null
-    )
+    ) {
+        getting = false;
         return;
+    }
 
     mapUid = App.RootMap.EdChallengeId;
 
@@ -213,6 +225,7 @@ void GetTimestampsAsync() {
     GetRecordsAsync();
 
     trace(funcName + ": success");
+    getting = false;
 }
 
 bool CheckJsonType(Json::Value@ value, Json::Type desired, const string &in name) {
