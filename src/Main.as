@@ -71,20 +71,6 @@ void Main() {
     }
 }
 
-void RenderMenu() {
-    menuOpen = true;
-
-    if (canViewRecords && UI::BeginMenu(title)) {
-        if (UI::MenuItem(Icons::Check + " Enabled", "", S_Enabled))
-            S_Enabled = !S_Enabled;
-
-        if (UI::MenuItem((getting ? "\\$AAA" : "") + Icons::Refresh + " Force Refresh", "", false, !getting))
-            startnew(GetTimestampsAsync);
-
-        UI::EndMenu();
-    }
-}
-
 void Render() {
     if (
         !S_Enabled
@@ -116,6 +102,20 @@ void Render() {
             UI::Text("...");
     }
     UI::End();
+}
+
+void RenderMenu() {
+    menuOpen = true;
+
+    if (canViewRecords && UI::BeginMenu(title)) {
+        if (UI::MenuItem(Icons::Check + " Enabled", "", S_Enabled))
+            S_Enabled = !S_Enabled;
+
+        if (UI::MenuItem((getting ? "\\$AAA" : "") + Icons::Refresh + " Force Refresh", "", false, !getting))
+            startnew(GetTimestampsAsync);
+
+        UI::EndMenu();
+    }
 }
 
 void GetTimestampsAsync() {
