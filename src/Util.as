@@ -42,6 +42,14 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
 }
 
+bool InMap() {
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
+    return App.RootMap !is null
+        && App.CurrentPlayground !is null
+        && App.Editor is null;
+}
+
 // courtesy of MisfitMaid
 int64 IsoToUnix(const string &in inTime) {
     SQLite::Statement@ s = timeDB.Prepare("SELECT unixepoch(?) as x");

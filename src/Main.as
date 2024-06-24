@@ -41,16 +41,40 @@ void Main() {
     NadeoServices::AddAudience(audienceCore);
     NadeoServices::AddAudience(audienceLive);
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    bool inMap             = false;
+    bool isDisplayRecords  = false;
+    bool wasDisplayRecords = false;
+    bool wasInMap          = false;
 
     while (true) {
         yield();
 
         menuOpen = false;
 
-        if (App.RootMap is null) {
+        inMap = InMap();
+
+        bool enteredMap = false;
+
+        if (wasInMap != inMap) {
+            wasInMap = inMap;
+
+            if (inMap) {
+                enteredMap = true;
+                startnew(GetAllTimestampsAsync);
+            }
+        }
+
+        if (!inMap) {
             Reset();
             continue;
+        }
+
+        isDisplayRecords = AlwaysDisplayRecords();
+        if (wasDisplayRecords != isDisplayRecords) {
+            wasDisplayRecords = isDisplayRecords;
+
+            if (isDisplayRecords && !enteredMap)
+                startnew(GetAllTimestampsAsync);
         }
 
         if (accountsQueue.Length > 0) {
@@ -106,13 +130,21 @@ void RenderMenu() {
             S_Enabled = !S_Enabled;
 
         if (UI::MenuItem((getting ? "\\$AAA" : "") + Icons::Refresh + " Force Refresh", "", false, !getting))
-            startnew(GetTimestampsAsync);
+            startnew(GetAllTimestampsAsync);
 
         UI::EndMenu();
     }
 }
 
-void GetTimestampsAsync() {
+void GetAllTimestampsAsync() {
+    GetTimestampsAsync();
+}
+
+void GetSurroundTimestampsAsync() {
+    GetTimestampsAsync(true);
+}
+
+void GetTimestampsAsync(bool onlySurround = false) {
     while (getting)
         yield();
 
@@ -122,28 +154,27 @@ void GetTimestampsAsync() {
 
     Reset();
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    if (
-        App.RootMap is null
-        || App.CurrentPlayground is null
-        || App.Editor !is null
-    ) {
+    if (!InMap()) {
         getting = false;
         return;
     }
 
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
     mapUid = App.RootMap.EdChallengeId;
 
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
-    GetRegionsTopAsync();
-    GetRegionsSurroundAsync();
     GetPlayerClubInfoAsync();
-    GetClubTopAsync();
     GetClubSurroundAsync();
-    GetClubVIPsAsync();
-    GetPlayerVIPsAsync();
+    GetRegionsSurroundAsync();
+
+    if (!onlySurround) {
+        GetClubTopAsync();
+        GetClubVIPsAsync();
+        GetPlayerVIPsAsync();
+        GetRegionsTopAsync();
+    }
 
     while (!NadeoServices::IsAuthenticated(audienceCore))
         yield();
