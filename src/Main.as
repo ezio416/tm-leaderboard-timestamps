@@ -1,13 +1,16 @@
 // c 2024-06-21
-// m 2024-06-23
+// m 2024-06-24
 
 dictionary@       accountsById   = dictionary();
 dictionary@       accountsByName = dictionary();
 string[]          accountsQueue;
 const string      audienceCore   = "NadeoServices";
 const string      audienceLive   = "NadeoLiveServices";
+bool              hasClubVip     = false;
+bool              hasPlayerVip   = false;
 string            mapUid;
 bool              menuOpen       = false;
+uint              pinnedClub     = 0;
 const float       scale          = UI::GetScale();
 SQLite::Database@ timeDB         = SQLite::Database(":memory:");
 const string      title          = "\\$FFF" + Icons::Arrows + "\\$G Leaderboard Timestamps";
@@ -25,17 +28,15 @@ bool S_HideWithOP = false;
 class Account {
     string id;
     string name;
-    int    score;
     int64  timestamp;
 
     Account() { }
-    Account(const string &in id, int score) {
+    Account(const string &in id) {
         this.id = id;
-        this.score = score;
     }
 
     string ToString() {
-        return "Account ( id: " + id + ", name: " + name + ", score: " + score + ", ts: " + timestamp + " )";
+        return "Account ( id: " + id + ", name: " + name + ", ts: " + timestamp + " )";
     }
 }
 
@@ -51,9 +52,7 @@ void Main() {
         menuOpen = false;
 
         if (App.RootMap is null) {
-            accountsById.DeleteAll();
-            accountsByName.DeleteAll();
-            mapUid = "";
+            Reset();
             continue;
         }
 
@@ -187,9 +186,10 @@ void Render() {
 }
 
 void GetTimestampsAsync() {
-    accountsById.DeleteAll();
-    accountsByName.DeleteAll();
-    mapUid = "";
+    const string funcName = "GetTimestampsAsync";
+    trace(funcName + ": starting");
+
+    Reset();
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
     if (
@@ -206,25 +206,18 @@ void GetTimestampsAsync() {
 
     GetTopAsync();
     GetSurroundAsync();
-
-    const uint clubId = GetPinnedClubAsync();
-    print("pinned club: " + clubId);
-
-    if (clubId > 0) {
-        GetClubTopAsync(clubId);
-        GetClubSurroundAsync(clubId);
-    } else
-        print("no pinned club");
-
-    // club vip
-    // player vip
+    GetPlayerClubInfoAsync();
+    GetClubTopAsync();
+    GetClubSurroundAsync();
+    GetClubVIPsAsync();
+    GetPlayerVIPsAsync();
 
     while (!NadeoServices::IsAuthenticated(audienceCore))
         yield();
 
     GetRecordsAsync();
 
-    print("done");
+    trace(funcName + ": success");
 }
 
 bool CheckJsonType(Json::Value@ value, Json::Type desired, const string &in name) {
@@ -260,6 +253,8 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
 }
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
+    sleep(waitTime);
+
     Net::HttpRequest@ req = NadeoServices::Get(audience, endpoint);
     req.Start();
     while (!req.Finished())
@@ -268,122 +263,157 @@ Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint)
     return req;
 }
 
-void GetClubSurroundAsync(uint clubId) {
-    sleep(waitTime);
-    print("getting club surround");
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + clubId + "/surround/1/1");
+void GetClubSurroundAsync() {
+    if (pinnedClub == 0)
+        return;
+
+    const string funcName = "GetClubSurroundAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1");
 
     const int code = req.ResponseCode();
     if (code != 200) {
-        warn("req (club surround): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    Json::Value@ club = req.Json();
-    if (!JsonIsObject(club, "club (surround)"))
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
-    if (!club.HasKey("top")) {
-        warn("club (surround) missing key 'top'");
+    if (!parsed.HasKey("top")) {
+        warn(funcName + ": parsed missing key 'top'");
         return;
     }
 
-    Json::Value@ top = club["top"];
-    if (!JsonIsArray(top, "top (club surround)"))
+    Json::Value@ top = parsed["top"];
+    if (!JsonIsArray(top, funcName + ": top"))
         return;
 
-    if (top.Length == 0)
-        warn("top (club surround) is empty");
-    else {
-        for (uint i = 0; i < top.Length; i++) {
-            Json::Value@ clubSurroundRecord = top[i];
-            if (!JsonIsObject(clubSurroundRecord, "clubSurroundRecord " + i))
-                continue;
+    if (top.Length == 0) {
+        warn(funcName + ": top is empty");
+        return;
+    }
 
-            if (!clubSurroundRecord.HasKey("accountId")) {
-                warn("clubSurroundRecord " + i + " missing key 'accountId'");
-                continue;
-            }
+    for (uint i = 0; i < top.Length; i++) {
+        Json::Value@ record = top[i];
+        if (!JsonIsObject(record, funcName + ": record " + i))
+            continue;
 
-            const string accountId = string(clubSurroundRecord["accountId"]);
+        if (!record.HasKey("accountId")) {
+            warn(funcName + ": record " + i + " missing key 'accountId'");
+            continue;
+        }
 
-            if (!clubSurroundRecord.HasKey("score")) {
-                warn("clubSurroundRecord " + i + " missing key 'score'");
-                continue;
-            }
+        const string accountId = string(record["accountId"]);
 
-            const int score = int(clubSurroundRecord["score"]);
-
-            // print("accountId " + accountId + " has score " + Time::Format(score));
-
-            if (accountsById.Exists(accountId)) {
-                Account@ account = cast<Account@>(accountsById[accountId]);
-                account.score = score;
-            } else {
-                accountsById[accountId] = Account(accountId, score);
-                accountsQueue.InsertLast(accountId);
-            }
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
         }
     }
+
+    trace(funcName + ": success");
 }
 
-void GetClubTopAsync(uint clubId) {
-    sleep(waitTime);
-    print("getting club top");
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + clubId + "/top");
+void GetClubTopAsync() {
+    if (pinnedClub == 0)
+        return;
+
+    const string funcName = "GetClubTopAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/top");
 
     const int code = req.ResponseCode();
     if (code != 200) {
-        warn("req (club top): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    Json::Value@ club = req.Json();
-    if (!JsonIsObject(club, "club (top)"))
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
-    if (!club.HasKey("top")) {
-        warn("club (top) missing key 'top'");
+    if (!parsed.HasKey("top")) {
+        warn(funcName + ": parsed missing key 'top'");
         return;
     }
 
-    Json::Value@ top = club["top"];
-    if (!JsonIsArray(top, "top (club top)"))
+    Json::Value@ top = parsed["top"];
+    if (!JsonIsArray(top, funcName + ": top"))
         return;
 
-    if (top.Length == 0)
-        warn("top (club top) is empty");
-    else {
-        for (uint i = 0; i < top.Length; i++) {
-            Json::Value@ clubTopRecord = top[i];
-            if (!JsonIsObject(clubTopRecord, "clubTopRecord " + i))
-                continue;
+    if (top.Length == 0) {
+        warn(funcName + ": top is empty");
+        return;
+    }
 
-            if (!clubTopRecord.HasKey("accountId")) {
-                warn("clubTopRecord " + i + " missing key 'accountId'");
-                continue;
-            }
+    for (uint i = 0; i < top.Length; i++) {
+        Json::Value@ record = top[i];
+        if (!JsonIsObject(record, funcName + ": record " + i))
+            continue;
 
-            const string accountId = string(clubTopRecord["accountId"]);
+        if (!record.HasKey("accountId")) {
+            warn(funcName + ": record " + i + " missing key 'accountId'");
+            continue;
+        }
 
-            if (!clubTopRecord.HasKey("score")) {
-                warn("clubTopRecord " + i + " missing key 'score'");
-                continue;
-            }
+        const string accountId = string(record["accountId"]);
 
-            const int score = int(clubTopRecord["score"]);
-
-            // print("accountId " + accountId + " has score " + Time::Format(score));
-
-            if (accountsById.Exists(accountId)) {
-                Account@ account = cast<Account@>(accountsById[accountId]);
-                account.score = score;
-            } else {
-                accountsById[accountId] = Account(accountId, score);
-                accountsQueue.InsertLast(accountId);
-            }
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
         }
     }
+
+    trace(funcName + ": success");
+}
+
+void GetClubVIPsAsync() {
+    if (pinnedClub == 0 || !hasClubVip)
+        return;
+
+    const string funcName = "GetClubVIPsAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/club/" + pinnedClub + "/vip/map/" + mapUid + "?seasonUid=Personal_Best");
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
+        return;
+
+    if (!parsed.HasKey("accountIdList")) {
+        warn(funcName + ": parsed missing key 'accountIdList'");
+        return;
+    }
+
+    Json::Value@ accounts = parsed["accountIdList"];
+    if (!JsonIsArray(accounts, funcName + ": accounts"))
+        return;
+
+    if (accounts.Length == 0) {
+        warn(funcName + ": accounts is empty");
+        return;
+    }
+
+    for (uint i = 0; i < accounts.Length; i++) {
+        const string accountId = string(accounts[i]);
+
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
+        }
+    }
+
+    trace(funcName + ": success");
 }
 
 Net::HttpRequest@ GetCoreAsync(const string &in endpoint) {
@@ -395,69 +425,137 @@ Net::HttpRequest@ GetLiveAsync(const string &in endpoint) {
 }
 
 string GetMapIdAsync() {
-    sleep(waitTime);
-    print("getting mapId");
+    const string funcName = "GetMapIdAsync";
+    trace(funcName + ": starting");
+
     Net::HttpRequest@ req = GetCoreAsync("/maps/?mapUidList=" + mapUid);
 
     const int code = req.ResponseCode();
     if (code != 200) {
-        warn("req (map info): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return "";
     }
 
-    Json::Value@ mapInfo = req.Json();
-    if (!JsonIsArray(mapInfo, "mapInfo"))
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsArray(parsed, funcName + ": parsed"))
         return "";
 
-    if (mapInfo.Length == 0) {
-        warn("mapInfo is empty");
+    if (parsed.Length == 0) {
+        warn(funcName + ": parsed is empty");
         return "";
     }
 
-    Json::Value@ map = mapInfo[0];
-    if (!JsonIsObject(map, "map"))
+    Json::Value@ map = parsed[0];
+    if (!JsonIsObject(map, funcName + ": map"))
         return "";
 
     if (!map.HasKey("mapId")) {
-        warn("map missing key 'mapId'");
+        warn(funcName + ": map missing key 'mapId'");
         return "";
     }
 
-    return string(map["mapId"]);
+    const string mapId = string(map["mapId"]);
+
+    trace(funcName + ": success");
+
+    return mapId;
 }
 
-uint GetPinnedClubAsync() {
-    sleep(waitTime);
-    print("getting pinned club");
+void GetPlayerClubInfoAsync() {
+    const string funcName = "GetPlayerClubInfoAsync";
+    trace(funcName + ": starting");
+
     Net::HttpRequest@ req = GetLiveAsync("/api/token/club/player/info");
 
     const int code = req.ResponseCode();
     if (code != 200) {
-        warn("req (pinned club): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
-        return 0;
-    }
-
-    Json::Value@ clubInfo = req.Json();
-    if (!JsonIsObject(clubInfo, "pinned club"))
-        return 0;
-
-    if (!clubInfo.HasKey("pinnedClub")) {
-        warn("clubInfo missing key 'pinnedClub'");
-        return 0;
-    }
-
-    return uint(clubInfo["pinnedClub"]);
-}
-
-void GetRecordsAsync() {
-    const string mapId = GetMapIdAsync();
-    if (mapId.Length == 0) {
-        warn("mapId empty");
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    sleep(waitTime);
-    print("getting records");
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
+        return;
+
+    if (!parsed.HasKey("hasClubVip")) {
+        warn(funcName + ": parsed missing key 'hasClubVip'");
+        return;
+    }
+
+    hasClubVip = bool(parsed["hasClubVip"]);
+
+    if (!parsed.HasKey("hasPlayerVip")) {
+        warn(funcName + ": parsed missing key 'hasPlayerVip'");
+        return;
+    }
+
+    hasPlayerVip = bool(parsed["hasPlayerVip"]);
+
+    if (!parsed.HasKey("pinnedClub")) {
+        warn(funcName + ": parsed missing key 'pinnedClub'");
+        return;
+    }
+
+    pinnedClub = uint(parsed["pinnedClub"]);
+
+    trace(funcName + ": success");
+}
+
+void GetPlayerVIPsAsync() {
+    if (!hasPlayerVip)
+        return;
+
+    const string funcName = "GetPlayerVIPsAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/club/player-vip/map/" + mapUid + "?seasonUid=Personal_Best");
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
+        return;
+
+    if (!parsed.HasKey("accountIdList")) {
+        warn(funcName + ": parsed missing key 'accountIdList'");
+        return;
+    }
+
+    Json::Value@ accounts = parsed["accountIdList"];
+    if (!JsonIsArray(accounts, funcName + ": accounts"))
+        return;
+
+    if (accounts.Length == 0) {
+        warn(funcName + ": accounts is empty");
+        return;
+    }
+
+    for (uint i = 0; i < accounts.Length; i++) {
+        const string accountId = string(accounts[i]);
+
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
+        }
+    }
+
+    trace(funcName + ": success");
+}
+
+void GetRecordsAsync() {
+    const string funcName = "GetRecordsAsync";
+    trace(funcName + ": starting");
+
+    const string mapId = GetMapIdAsync();
+    if (mapId.Length == 0) {
+        warn(funcName + ": mapId blank");
+        return;
+    }
+
     Net::HttpRequest@ req = GetCoreAsync("/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapIdList=" + mapId);
 
     const int code = req.ResponseCode();
@@ -466,29 +564,29 @@ void GetRecordsAsync() {
         return;
     }
 
-    Json::Value@ records = req.Json();
-    if (!JsonIsArray(records, "records"))
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsArray(parsed, funcName + ": parsed"))
         return;
 
-    if (records.Length == 0) {
-        warn("records is empty");
+    if (parsed.Length == 0) {
+        warn(funcName + ": parsed is empty");
         return;
     }
 
-    for (uint i = 0; i < records.Length; i++) {
-        Json::Value@ record = records[i];
-        if (!JsonIsObject(record, "record " + i))
+    for (uint i = 0; i < parsed.Length; i++) {
+        Json::Value@ record = parsed[i];
+        if (!JsonIsObject(record, funcName + ": record " + i))
             continue;
 
         if (!record.HasKey("accountId")) {
-            warn("record " + i + " missing key 'accountId'");
+            warn(funcName + ": record " + i + " missing key 'accountId'");
             continue;
         }
 
         const string accountId = record["accountId"];
 
         if (!record.HasKey("timestamp")) {
-            warn("record " + i + " missing key 'timestamp'");
+            warn(funcName + ": record " + i + " missing key 'timestamp'");
             continue;
         }
 
@@ -499,156 +597,140 @@ void GetRecordsAsync() {
         account.timestamp = timestamp;
         // print(account);
     }
+
+    trace(funcName + ": success");
 }
 
 void GetSurroundAsync() {
-    sleep(waitTime);
-    print("getting surround");
+    const string funcName = "GetSurroundAsync";
+    trace(funcName + ": starting");
+
     Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1");
 
     const int code = req.ResponseCode();
     if (code != 200) {
-        warn("req (surround): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
-    Json::Value@ top = req.Json();
-    if (!JsonIsObject(top, "top"))
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
-    if (!top.HasKey("tops")) {
-        warn("top (surround) missing key 'tops'");
-        return;
-    }
-
-    Json::Value@ tops = top["tops"];
-    if (!JsonIsArray(tops, "tops"))
-        return;
-
-    if (tops.Length == 0)
-        warn("tops (surround) is empty");
-    else {
-        for (uint i = 0; i < tops.Length; i++) {
-            Json::Value@ region = tops[i];
-            if (!JsonIsObject(region, "region " + i))
-                continue;
-
-            if (!region.HasKey("top")) {
-                warn("region " + i + " (surround) missing key 'top'");
-                continue;
-            }
-
-            Json::Value@ regionTop = region["top"];
-            if (!JsonIsArray(regionTop, "regionTop"))
-                continue;
-
-            for (uint j = 0; j < regionTop.Length; j++) {
-                Json::Value@ regionTopRecord = regionTop[j];
-                if (!JsonIsObject(regionTopRecord, "regionTopRecord " + i + " " + j))
-                    continue;
-
-                if (!regionTopRecord.HasKey("accountId")) {
-                    warn("regionTopRecord " + i + " " + j + " (surround) missing key 'accountId'");
-                    continue;
-                }
-
-                const string accountId = string(regionTopRecord["accountId"]);
-
-                if (!regionTopRecord.HasKey("score")) {
-                    warn("regionTopRecord " + i + " " + j + " (surround) missing key 'score'");
-                    continue;
-                }
-
-                const int score = int(regionTopRecord["score"]);
-
-                // print("accountId " + accountId + " has score " + Time::Format(score));
-
-                if (accountsById.Exists(accountId)) {
-                    Account@ account = cast<Account@>(accountsById[accountId]);
-                    account.score = score;
-                } else {
-                    accountsById[accountId] = Account(accountId, score);
-                    accountsQueue.InsertLast(accountId);
-                }
-            }
-        }
-    }
-
-}
-
-void GetTopAsync() {
-    sleep(waitTime);
-    print("getting top");
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top");
-
-    const int code = req.ResponseCode();
-    if (code != 200) {
-        warn("req (top): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+    if (!parsed.HasKey("tops")) {
+        warn(funcName + ": parsed missing key 'tops'");
         return;
     }
 
-    Json::Value@ top = req.Json();
-    if (!JsonIsObject(top, "top"))
-        return;
-
-    if (!top.HasKey("tops")) {
-        warn("top missing key 'tops'");
-        return;
-    }
-
-    Json::Value@ tops = top["tops"];
-    if (!JsonIsArray(tops, "tops"))
+    Json::Value@ tops = parsed["tops"];
+    if (!JsonIsArray(tops, funcName + ": tops"))
         return;
 
     if (tops.Length == 0) {
-        warn("tops is empty");
+        warn(funcName + ": tops is empty");
         return;
     }
 
     for (uint i = 0; i < tops.Length; i++) {
         Json::Value@ region = tops[i];
-        if (!JsonIsObject(region, "region " + i))
+        if (!JsonIsObject(region, funcName + ": region " + i))
             continue;
 
         if (!region.HasKey("top")) {
-            warn("region " + i + " missing key 'top'");
+            warn(funcName + ": region " + i + " missing key 'top'");
             continue;
         }
 
         Json::Value@ regionTop = region["top"];
-        if (!JsonIsArray(regionTop, "regionTop"))
+        if (!JsonIsArray(regionTop, funcName + ": regionTop " + i))
             continue;
 
         for (uint j = 0; j < regionTop.Length; j++) {
-            Json::Value@ regionTopRecord = regionTop[j];
-            if (!JsonIsObject(regionTopRecord, "regionTopRecord " + i + " " + j))
+            Json::Value@ record = regionTop[j];
+            if (!JsonIsObject(record, funcName + ": record " + i + " " + j))
                 continue;
 
-            if (!regionTopRecord.HasKey("accountId")) {
-                warn("regionTopRecord " + i + " " + j + " missing key 'accountId'");
-                continue;
-            }
-
-            const string accountId = string(regionTopRecord["accountId"]);
-
-            if (!regionTopRecord.HasKey("score")) {
-                warn("regionTopRecord " + i + " " + j + " missing key 'score'");
+            if (!record.HasKey("accountId")) {
+                warn(funcName + ": record " + i + " " + j + " missing key 'accountId'");
                 continue;
             }
 
-            const int score = int(regionTopRecord["score"]);
+            const string accountId = string(record["accountId"]);
 
-            // print("accountId " + accountId + " has score " + Time::Format(score));
-
-            if (accountsById.Exists(accountId)) {
-                Account@ account = cast<Account@>(accountsById[accountId]);
-                account.score = score;
-            } else {
-                accountsById[accountId] = Account(accountId, score);
+            if (!accountsById.Exists(accountId)) {
+                accountsById[accountId] = Account(accountId);
                 accountsQueue.InsertLast(accountId);
             }
         }
     }
+
+    trace(funcName + ": success");
+}
+
+void GetTopAsync() {
+    const string funcName = "GetTopAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top");
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + "+ parsed"))
+        return;
+
+    if (!parsed.HasKey("tops")) {
+        warn(funcName + ": parsed missing key 'tops'");
+        return;
+    }
+
+    Json::Value@ tops = parsed["tops"];
+    if (!JsonIsArray(tops, funcName + ": tops"))
+        return;
+
+    if (tops.Length == 0) {
+        warn(funcName + ": tops is empty");
+        return;
+    }
+
+    for (uint i = 0; i < tops.Length; i++) {
+        Json::Value@ region = tops[i];
+        if (!JsonIsObject(region, funcName + ": region " + i))
+            continue;
+
+        if (!region.HasKey("top")) {
+            warn(funcName + ": region " + i + " missing key 'top'");
+            continue;
+        }
+
+        Json::Value@ regionTop = region["top"];
+        if (!JsonIsArray(regionTop, funcName + ": regionTop " + i))
+            continue;
+
+        for (uint j = 0; j < regionTop.Length; j++) {
+            Json::Value@ record = regionTop[j];
+            if (!JsonIsObject(record, funcName + ": record " + i + " " + j))
+                continue;
+
+            if (!record.HasKey("accountId")) {
+                warn(funcName + ": record " + i + " " + j + " missing key 'accountId'");
+                continue;
+            }
+
+            const string accountId = string(record["accountId"]);
+
+            if (!accountsById.Exists(accountId)) {
+                accountsById[accountId] = Account(accountId);
+                accountsQueue.InsertLast(accountId);
+            }
+        }
+    }
+
+    trace(funcName + ": success");
 }
 
 // courtesy of MisfitMaid
@@ -667,6 +749,15 @@ bool JsonIsArray(Json::Value@ value, const string &in name) {
 
 bool JsonIsObject(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Object, name);
+}
+
+void Reset() {
+    accountsById.DeleteAll();
+    accountsByName.DeleteAll();
+    hasClubVip   = false;
+    hasPlayerVip = false;
+    mapUid       = "";
+    pinnedClub   = 0;
 }
 
 string UnixToIso(uint timestamp) {
