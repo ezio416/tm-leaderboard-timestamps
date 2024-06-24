@@ -43,14 +43,6 @@ void Settings_General() {
 
     S_Recency = UI::Checkbox("Show recency", S_Recency);
     HoverTooltipSetting("How long ago run was driven");
-
-    UI::Separator();
-
-    UI::BeginDisabled(getting);
-    if (UI::Button(Icons::Refresh + " Force refresh"))
-        startnew(GetTimestampsAsync);
-    UI::EndDisabled();
-    HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 }
 
 [SettingsTab name="Debug" icon="Bug" order=1]
@@ -72,6 +64,12 @@ void Settings_Debug() {
     UI::Text("accountsQueue: " + accountsQueue.Length);
     UI::Text("total accounts: " + accountsById.GetSize());
     UI::Text("getting data: " + getting);
+
+    UI::BeginDisabled(getting);
+    if (UI::Button(Icons::Refresh + " Force refresh"))
+        startnew(GetTimestampsAsync);
+    UI::EndDisabled();
+    HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 
     if (UI::BeginTable("##table-debug", 5, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
         UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(0.0f, 0.0f, 0.0f, 0.5f));
