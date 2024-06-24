@@ -195,6 +195,15 @@ void Render() {
     UI::End();
 }
 
+bool AlwaysDisplayRecords() {
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
+    if (App.CurrentProfile is null || !App.CurrentProfile.Interface_AlwaysDisplayRecords)
+        return false;
+
+    return true;
+}
+
 void GetTimestampsAsync() {
     while (getting)
         yield();
