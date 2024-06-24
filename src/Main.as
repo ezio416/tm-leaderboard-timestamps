@@ -13,14 +13,11 @@ bool              menuOpen       = false;
 uint              pinnedClub     = 0;
 const float       scale          = UI::GetScale();
 SQLite::Database@ timeDB         = SQLite::Database(":memory:");
-const string      title          = "\\$FFF" + Icons::Arrows + "\\$G Leaderboard Timestamps";
+const string      title          = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
 const uint64      waitTime       = 500;
 
 [Setting category="General" name="Enabled"]
 bool S_Enabled = true;
-
-[Setting category="General" name="Show/hide with game UI"]
-bool S_HideWithGame = true;
 
 [Setting category="General" name="Show/hide with Openplanet UI"]
 bool S_HideWithOP = false;
@@ -76,12 +73,7 @@ void RenderMenu() {
 }
 
 void Render() {
-    if (
-        !S_Enabled
-        || (S_HideWithGame && !UI::IsGameUIVisible())
-        || (S_HideWithOP && !UI::IsOverlayShown())
-        || menuOpen
-    )
+    if (!S_Enabled || (S_HideWithOP && !UI::IsOverlayShown()))
         return;
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
@@ -106,6 +98,9 @@ void Render() {
         }
     }
     UI::End();
+
+    if (menuOpen)
+        return;
 
     CGameManialinkPage@ RecordsTable;
 
