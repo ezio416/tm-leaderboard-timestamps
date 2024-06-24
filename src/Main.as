@@ -383,45 +383,7 @@ void GetClubVIPsAsync() {
     if (pinnedClub == 0 || !hasClubVip)
         return;
 
-    const string funcName = "GetClubVIPsAsync";
-    trace(funcName + ": starting");
-
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/club/" + pinnedClub + "/vip/map/" + mapUid + "?seasonUid=Personal_Best");
-
-    const int code = req.ResponseCode();
-    if (code != 200) {
-        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
-        return;
-    }
-
-    Json::Value@ parsed = req.Json();
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
-        return;
-
-    if (!parsed.HasKey("accountIdList")) {
-        warn(funcName + ": parsed missing key 'accountIdList'");
-        return;
-    }
-
-    Json::Value@ accounts = parsed["accountIdList"];
-    if (!JsonIsArray(accounts, funcName + ": accounts"))
-        return;
-
-    if (accounts.Length == 0) {
-        warn(funcName + ": accounts is empty");
-        return;
-    }
-
-    for (uint i = 0; i < accounts.Length; i++) {
-        const string accountId = string(accounts[i]);
-
-        if (!accountsById.Exists(accountId)) {
-            accountsById[accountId] = Account(accountId);
-            accountsQueue.InsertLast(accountId);
-        }
-    }
-
-    trace(funcName + ": success");
+    GetVIPsAsync("GetClubVIPsAsync", "/api/token/club/" + pinnedClub + "/vip/map/" + mapUid + "?seasonUid=Personal_Best");
 }
 
 Net::HttpRequest@ GetCoreAsync(const string &in endpoint) {
@@ -513,45 +475,7 @@ void GetPlayerVIPsAsync() {
     if (!hasPlayerVip)
         return;
 
-    const string funcName = "GetPlayerVIPsAsync";
-    trace(funcName + ": starting");
-
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/club/player-vip/map/" + mapUid + "?seasonUid=Personal_Best");
-
-    const int code = req.ResponseCode();
-    if (code != 200) {
-        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
-        return;
-    }
-
-    Json::Value@ parsed = req.Json();
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
-        return;
-
-    if (!parsed.HasKey("accountIdList")) {
-        warn(funcName + ": parsed missing key 'accountIdList'");
-        return;
-    }
-
-    Json::Value@ accounts = parsed["accountIdList"];
-    if (!JsonIsArray(accounts, funcName + ": accounts"))
-        return;
-
-    if (accounts.Length == 0) {
-        warn(funcName + ": accounts is empty");
-        return;
-    }
-
-    for (uint i = 0; i < accounts.Length; i++) {
-        const string accountId = string(accounts[i]);
-
-        if (!accountsById.Exists(accountId)) {
-            accountsById[accountId] = Account(accountId);
-            accountsQueue.InsertLast(accountId);
-        }
-    }
-
-    trace(funcName + ": success");
+    GetVIPsAsync("GetPlayerVIPsAsync", "/api/token/club/player-vip/map/" + mapUid + "?seasonUid=Personal_Best");
 }
 
 void GetRecordsAsync() {
@@ -735,6 +659,47 @@ void GetTopAsync() {
                 accountsById[accountId] = Account(accountId);
                 accountsQueue.InsertLast(accountId);
             }
+        }
+    }
+
+    trace(funcName + ": success");
+}
+
+void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync(endpoint);
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
+        return;
+
+    if (!parsed.HasKey("accountIdList")) {
+        warn(funcName + ": parsed missing key 'accountIdList'");
+        return;
+    }
+
+    Json::Value@ accounts = parsed["accountIdList"];
+    if (!JsonIsArray(accounts, funcName + ": accounts"))
+        return;
+
+    if (accounts.Length == 0) {
+        warn(funcName + ": accounts is empty");
+        return;
+    }
+
+    for (uint i = 0; i < accounts.Length; i++) {
+        const string accountId = string(accounts[i]);
+
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
         }
     }
 
