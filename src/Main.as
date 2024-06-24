@@ -128,15 +128,26 @@ void Render() {
     const vec2 mousePos = UI::GetMousePos();
     UI::SetNextWindowPos(int((mousePos.x + 5) / scale), int((mousePos.y + 5) / scale), UI::Cond::Always);
     if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoTitleBar)) {
-        if (accountsByName.Exists(name)) {
-            Account@ account = cast<Account@>(accountsByName[name]);
-            if (account.timestamp > 0) {
-                UI::Text(UnixToIso(account.timestamp));
-                UI::Text(FormatSeconds(Time::Stamp - account.timestamp) + " ago");
+        if (true
+            && !S_Timestamp
+            && !S_Recency
+        )
+            UI::Text("\\$FA0Enable an option in the settings!");
+        else {
+            const string loadingText = "\\$AAAloading...";
+
+            if (accountsByName.Exists(name)) {
+                Account@ account = cast<Account@>(accountsByName[name]);
+                if (account.timestamp > 0) {
+                    if (S_Timestamp)
+                        UI::Text(UnixToIso(account.timestamp));
+                    if (S_Recency)
+                        UI::Text(FormatSeconds(Time::Stamp - account.timestamp) + " ago");
+                } else
+                    UI::Text(loadingText);
             } else
-                UI::Text("...");
-        } else
-            UI::Text("...");
+                UI::Text(loadingText);
+        }
     }
     UI::End();
 }

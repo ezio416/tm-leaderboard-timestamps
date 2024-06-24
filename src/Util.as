@@ -65,6 +65,15 @@ uint GetPersonalBestAsync() {
     return CMAP.ScoreMgr.Map_GetRecord_v2(App.UserManagerScript.Users[0].Id, mapUid, "PersonalBest", "", "TimeAttack", "");
 }
 
+void HoverTooltip(const string &in msg) {
+    if (!UI::IsItemHovered())
+        return;
+
+    UI::BeginTooltip();
+        UI::Text(msg);
+    UI::EndTooltip();
+}
+
 bool InMap() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
@@ -92,5 +101,5 @@ bool JsonIsObject(Json::Value@ value, const string &in name) {
 }
 
 string UnixToIso(uint timestamp) {
-    return Time::FormatString("%Y-%m-%d \\$AAA@ \\$G%H:%M:%S \\$AAA(%a)\\$G", timestamp);
+    return Time::FormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
 }
