@@ -271,14 +271,13 @@ Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint)
     return req;
 }
 
-void GetClubSurroundAsync() {
+void GetClubAsync(const string &in funcName, const string &in endpoint) {
     if (pinnedClub == 0)
         return;
 
-    const string funcName = "GetClubSurroundAsync";
     trace(funcName + ": starting");
 
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1");
+    Net::HttpRequest@ req = GetLiveAsync(endpoint);
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -325,58 +324,12 @@ void GetClubSurroundAsync() {
     trace(funcName + ": success");
 }
 
+void GetClubSurroundAsync() {
+    GetClubAsync("GetClubSurroundAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1");
+}
+
 void GetClubTopAsync() {
-    if (pinnedClub == 0)
-        return;
-
-    const string funcName = "GetClubTopAsync";
-    trace(funcName + ": starting");
-
-    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/top");
-
-    const int code = req.ResponseCode();
-    if (code != 200) {
-        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
-        return;
-    }
-
-    Json::Value@ parsed = req.Json();
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
-        return;
-
-    if (!parsed.HasKey("top")) {
-        warn(funcName + ": parsed missing key 'top'");
-        return;
-    }
-
-    Json::Value@ top = parsed["top"];
-    if (!JsonIsArray(top, funcName + ": top"))
-        return;
-
-    if (top.Length == 0) {
-        warn(funcName + ": top is empty");
-        return;
-    }
-
-    for (uint i = 0; i < top.Length; i++) {
-        Json::Value@ record = top[i];
-        if (!JsonIsObject(record, funcName + ": record " + i))
-            continue;
-
-        if (!record.HasKey("accountId")) {
-            warn(funcName + ": record " + i + " missing key 'accountId'");
-            continue;
-        }
-
-        const string accountId = string(record["accountId"]);
-
-        if (!accountsById.Exists(accountId)) {
-            accountsById[accountId] = Account(accountId);
-            accountsQueue.InsertLast(accountId);
-        }
-    }
-
-    trace(funcName + ": success");
+    GetClubAsync("GetClubTopAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/top");
 }
 
 void GetClubVIPsAsync() {
