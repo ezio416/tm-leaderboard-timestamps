@@ -6,6 +6,7 @@ dictionary@       accountsByName = dictionary();
 string[]          accountsQueue;
 const string      audienceCore   = "NadeoServices";
 const string      audienceLive   = "NadeoLiveServices";
+bool              canViewRecords = false;
 bool              getting        = false;
 bool              hasClubVip     = false;
 bool              hasPlayerVip   = false;
@@ -39,6 +40,10 @@ class Account {
 }
 
 void Main() {
+    canViewRecords = Permissions::ViewRecords();
+    if (!canViewRecords)
+        return;
+
     NadeoServices::AddAudience(audienceCore);
     NadeoServices::AddAudience(audienceLive);
 
@@ -69,7 +74,7 @@ void Main() {
 void RenderMenu() {
     menuOpen = true;
 
-    if (UI::BeginMenu(title)) {
+    if (canViewRecords && UI::BeginMenu(title)) {
         if (UI::MenuItem(Icons::Check + " Enabled", "", S_Enabled))
             S_Enabled = !S_Enabled;
 
@@ -81,7 +86,11 @@ void RenderMenu() {
 }
 
 void Render() {
-    if (!S_Enabled || (S_HideWithOP && !UI::IsOverlayShown()))
+    if (
+        !S_Enabled
+        || (S_HideWithOP && !UI::IsOverlayShown())
+        || !canViewRecords
+    )
         return;
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
