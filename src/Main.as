@@ -50,6 +50,9 @@ void Main() {
     while (true) {
         yield();
 
+        if (!S_Enabled)
+            continue;
+
         menuOpen = false;
 
         inMap = InMap();
