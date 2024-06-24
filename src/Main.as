@@ -127,7 +127,7 @@ void Render() {
 
     const vec2 mousePos = UI::GetMousePos();
     UI::SetNextWindowPos(int((mousePos.x + 5) / scale), int((mousePos.y + 5) / scale), UI::Cond::Always);
-    if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoTitleBar)) {
+    if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoFocusOnAppearing | UI::WindowFlags::NoTitleBar)) {
         if (true
             && !S_Timestamp
             && !S_Recency
