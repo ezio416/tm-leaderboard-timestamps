@@ -50,8 +50,10 @@ void Main() {
     while (true) {
         yield();
 
-        if (!S_Enabled)
+        if (!S_Enabled) {
+            wasInMap = false;
             continue;
+        }
 
         menuOpen = false;
 
