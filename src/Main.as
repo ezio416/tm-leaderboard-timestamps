@@ -43,6 +43,7 @@ void Main() {
 
     bool inMap             = false;
     bool isDisplayRecords  = false;
+    uint pb                = 0;
     bool wasDisplayRecords = false;
     bool wasInMap          = false;
 
@@ -60,7 +61,8 @@ void Main() {
 
             if (inMap) {
                 enteredMap = true;
-                startnew(GetAllTimestampsAsync);
+                trace("entered map");
+                startnew(GetTimestampsAsync);
             }
         }
 
@@ -69,12 +71,24 @@ void Main() {
             continue;
         }
 
+        bool gotNewPb = false;
+
+        const uint newPb = GetPersonalBestAsync();
+        if (newPb > 0 && pb != newPb) {
+            pb = newPb;
+            gotNewPb = true;
+            trace("new PB found");
+            startnew(GetTimestampsAsync);
+        }
+
         isDisplayRecords = AlwaysDisplayRecords();
         if (wasDisplayRecords != isDisplayRecords) {
             wasDisplayRecords = isDisplayRecords;
 
-            if (isDisplayRecords && !enteredMap)
-                startnew(GetAllTimestampsAsync);
+            if (isDisplayRecords && !enteredMap && !gotNewPb) {
+                trace("leaderboard refreshed");
+                startnew(GetTimestampsAsync);
+            }
         }
 
         if (accountsQueue.Length > 0) {
@@ -90,8 +104,8 @@ void Main() {
 }
 
 void Render() {
-    if (
-        !S_Enabled
+    if (false
+        || !S_Enabled
         || (S_HideWithOP && !UI::IsOverlayShown())
         || !canViewRecords
         || menuOpen
@@ -100,8 +114,8 @@ void Render() {
 
     const string name = HoveredName();
 
-    if (
-        name.Length == 0
+    if (false
+        || name.Length == 0
         || name.StartsWith("\u0092")  // medals
     )
         return;
@@ -130,21 +144,13 @@ void RenderMenu() {
             S_Enabled = !S_Enabled;
 
         if (UI::MenuItem((getting ? "\\$AAA" : "") + Icons::Refresh + " Force Refresh", "", false, !getting))
-            startnew(GetAllTimestampsAsync);
+            startnew(GetTimestampsAsync);
 
         UI::EndMenu();
     }
 }
 
-void GetAllTimestampsAsync() {
-    GetTimestampsAsync();
-}
-
-void GetSurroundTimestampsAsync() {
-    GetTimestampsAsync(true);
-}
-
-void GetTimestampsAsync(bool onlySurround = false) {
+void GetTimestampsAsync() {
     while (getting)
         yield();
 
@@ -165,16 +171,13 @@ void GetTimestampsAsync(bool onlySurround = false) {
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
+    GetRegionsTopAsync();
+    GetRegionsSurroundAsync();
     GetPlayerClubInfoAsync();
     GetClubSurroundAsync();
-    GetRegionsSurroundAsync();
-
-    if (!onlySurround) {
-        GetClubTopAsync();
-        GetClubVIPsAsync();
-        GetPlayerVIPsAsync();
-        GetRegionsTopAsync();
-    }
+    GetClubTopAsync();
+    GetClubVIPsAsync();
+    GetPlayerVIPsAsync();
 
     while (!NadeoServices::IsAuthenticated(audienceCore))
         yield();

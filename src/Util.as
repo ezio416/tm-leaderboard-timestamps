@@ -42,6 +42,29 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
 }
 
+uint GetPersonalBestAsync() {
+    if (!InMap())
+        return 0;
+
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
+    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+
+    if (false
+        || CMAP is null
+        || CMAP.ScoreMgr is null
+        || CMAP.UI is null
+        || CMAP.UI.UISequence != CGamePlaygroundUIConfig::EUISequence::Finish
+        || App.UserManagerScript is null
+        || App.UserManagerScript.Users.Length == 0
+    )
+        return 0;
+
+    sleep(500);  // allow game to process PB, 500ms should be enough time
+
+    return CMAP.ScoreMgr.Map_GetRecord_v2(App.UserManagerScript.Users[0].Id, mapUid, "PersonalBest", "", "TimeAttack", "");
+}
+
 bool InMap() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
