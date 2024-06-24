@@ -441,6 +441,7 @@ void GetRecordsAsync() {
         return;
     }
 
+    // todo: account for many club VIPs
     Net::HttpRequest@ req = GetCoreAsync("/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapIdList=" + mapId);
 
     const int code = req.ResponseCode();
