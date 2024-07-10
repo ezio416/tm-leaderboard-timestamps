@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2024-06-24
+// m 2024-07-10
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -221,6 +221,9 @@ void GetRecordsAsync() {
         const int64 timestamp = IsoToUnix(timestampIso);
 
         Account@ account = cast<Account@>(accountsById[accountId]);
+        if (account is null)
+            continue;
+
         account.timestamp = timestamp;
         // print(account);
     }

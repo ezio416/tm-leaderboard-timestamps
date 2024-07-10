@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2024-06-24
+// m 2024-07-04
 
 bool AlwaysDisplayRecords() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
@@ -57,10 +57,20 @@ uint GetPersonalBestAsync() {
         || CMAP.UI.UISequence != CGamePlaygroundUIConfig::EUISequence::Finish
         || App.UserManagerScript is null
         || App.UserManagerScript.Users.Length == 0
+        || App.UserManagerScript.Users[0] is null
     )
         return 0;
 
     sleep(500);  // allow game to process PB, 500ms should be enough time
+
+    if (false
+        || CMAP is null
+        || CMAP.ScoreMgr is null
+        || App.UserManagerScript is null
+        || App.UserManagerScript.Users.Length == 0
+        || App.UserManagerScript.Users[0] is null
+    )
+        return 0;
 
     return CMAP.ScoreMgr.Map_GetRecord_v2(App.UserManagerScript.Users[0].Id, mapUid, "PersonalBest", "", "TimeAttack", "");
 }

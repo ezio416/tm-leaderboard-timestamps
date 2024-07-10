@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2024-06-24
+// m 2024-07-02
 
 dictionary@       accountsById   = dictionary();
 dictionary@       accountsByName = dictionary();
@@ -101,8 +101,10 @@ void Main() {
             const string name = NadeoServices::GetDisplayNameAsync(accountId);
             // print("accountId " + accountId + " has name " + name);
             Account@ account = cast<Account@>(accountsById[accountId]);
-            account.name = name;
-            accountsByName[name] = @account;
+            if (account !is null) {
+                account.name = name;
+                accountsByName[name] = @account;
+            }
             accountsQueue.RemoveAt(0);
         }
     }
