@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2024-07-02
+// m 2024-07-10
 
 dictionary@       accountsById   = dictionary();
 dictionary@       accountsByName = dictionary();
@@ -127,9 +127,7 @@ void Render() {
     )
         return;
 
-    const vec2 mousePos = UI::GetMousePos();
-    UI::SetNextWindowPos(int((mousePos.x + 5) / scale), int((mousePos.y + 5) / scale), UI::Cond::Always);
-    if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoFocusOnAppearing | UI::WindowFlags::NoTitleBar)) {
+    UI::BeginTooltip();
         if (true
             && !S_Timestamp
             && !S_Recency
@@ -150,8 +148,7 @@ void Render() {
             } else
                 UI::Text(loadingText);
         }
-    }
-    UI::End();
+    UI::EndTooltip();
 }
 
 void RenderMenu() {
