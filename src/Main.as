@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2024-07-10
+// m 2024-07-11
 
 dictionary@       accountsById   = dictionary();
 dictionary@       accountsByName = dictionary();
@@ -174,6 +174,12 @@ void GetTimestampsAsync() {
     }
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
+    if (string(App.RootMap.MapType) == "TrackMania\\TM_Stunt") {
+        getting = false;
+        return;
+    }
+
     mapUid = App.RootMap.EdChallengeId;
 
     while (!NadeoServices::IsAuthenticated(audienceLive))
