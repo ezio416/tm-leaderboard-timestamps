@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2024-07-10
+// m 2024-07-11
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -183,11 +183,11 @@ void GetRecordsAsync() {
     }
 
     // todo: account for many club VIPs
-    Net::HttpRequest@ req = GetCoreAsync("/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapIdList=" + mapId);
+    Net::HttpRequest@ req = GetCoreAsync("/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId);
 
     const int code = req.ResponseCode();
     if (code != 200) {
-        warn("req (records): code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
         return;
     }
 
