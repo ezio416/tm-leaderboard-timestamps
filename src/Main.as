@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2024-07-11
+// m 2024-09-02
 
 dictionary@       accountsById   = dictionary();
 dictionary@       accountsByName = dictionary();
@@ -175,7 +175,7 @@ void GetTimestampsAsync() {
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
-    if (string(App.RootMap.MapType) == "TrackMania\\TM_Stunt") {
+    if (string(App.RootMap.MapType).Contains("TM_Stunt")) {
         getting = false;
         return;
     }
