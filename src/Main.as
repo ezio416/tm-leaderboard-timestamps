@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2024-06-24
+// m 2024-09-02
 
 dictionary@       accountsById   = dictionary();
 dictionary@       accountsByName = dictionary();
@@ -101,8 +101,10 @@ void Main() {
             const string name = NadeoServices::GetDisplayNameAsync(accountId);
             // print("accountId " + accountId + " has name " + name);
             Account@ account = cast<Account@>(accountsById[accountId]);
-            account.name = name;
-            accountsByName[name] = @account;
+            if (account !is null) {
+                account.name = name;
+                accountsByName[name] = @account;
+            }
             accountsQueue.RemoveAt(0);
         }
     }
@@ -125,9 +127,7 @@ void Render() {
     )
         return;
 
-    const vec2 mousePos = UI::GetMousePos();
-    UI::SetNextWindowPos(int((mousePos.x + 5) / scale), int((mousePos.y + 5) / scale), UI::Cond::Always);
-    if (UI::Begin(title + "hover", S_Enabled, UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoFocusOnAppearing | UI::WindowFlags::NoTitleBar)) {
+    UI::BeginTooltip();
         if (true
             && !S_Timestamp
             && !S_Recency
@@ -148,8 +148,7 @@ void Render() {
             } else
                 UI::Text(loadingText);
         }
-    }
-    UI::End();
+    UI::EndTooltip();
 }
 
 void RenderMenu() {
@@ -175,6 +174,12 @@ void GetTimestampsAsync() {
     }
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
+    if (string(App.RootMap.MapType).Contains("TM_Stunt")) {
+        getting = false;
+        return;
+    }
+
     mapUid = App.RootMap.EdChallengeId;
 
     while (!NadeoServices::IsAuthenticated(audienceLive))
