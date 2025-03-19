@@ -17,7 +17,6 @@ uint              pinnedClub      = 0;
 int               raceRecordIndex = -1;
 const float       scale           = UI::GetScale();
 const float       stdRatio        = 16.0f / 9.0f;
-SQLite::Database@ timeDB          = SQLite::Database(":memory:");
 const string      title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
 const uint64      waitTime        = 500;
 

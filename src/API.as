@@ -222,7 +222,7 @@ void GetRecordsAsync() {
         }
 
         const string timestampIso = string(record["timestamp"]);
-        const int64 timestamp = IsoToUnix(timestampIso);
+        const int64 timestamp = Time::ParseFormatString("%FT%T", timestampIso);
 
         Account@ account = cast<Account@>(accountsById[accountId]);
         if (account is null)

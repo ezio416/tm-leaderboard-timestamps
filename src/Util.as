@@ -92,16 +92,6 @@ bool InMap() {
         && App.Editor is null;
 }
 
-// courtesy of MisfitMaid
-int64 IsoToUnix(const string &in inTime) {
-    SQLite::Statement@ s = timeDB.Prepare("SELECT unixepoch(?) as x");
-    s.Bind(1, inTime);
-    s.Execute();
-    s.NextRow();
-    s.NextRow();
-    return s.GetColumnInt64("x");
-}
-
 bool JsonIsArray(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Array, name);
 }
