@@ -1,24 +1,24 @@
 // c 2024-06-21
 // m 2025-03-19
 
-dictionary@       accountsById    = dictionary();
-dictionary@       accountsByName  = dictionary();
-string[]          accountsQueue;
-const string      audienceCore    = "NadeoServices";
-const string      audienceLive    = "NadeoLiveServices";
-bool              canViewRecords  = false;
-bool              getting         = false;
-bool              hasClubVip      = false;
-bool              hasPlayerVip    = false;
-const string      legacyLoadText  = "\\$AAAloading...";
-string            mapUid;
-bool              menuOpen        = false;
-uint              pinnedClub      = 0;
-int               raceRecordIndex = -1;
-const float       scale           = UI::GetScale();
-const float       stdRatio        = 16.0f / 9.0f;
-const string      title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
-const uint64      waitTime        = 500;
+dictionary@  accountsById    = dictionary();
+dictionary@  accountsByName  = dictionary();
+string[]     accountsQueue;
+const string audienceCore    = "NadeoServices";
+const string audienceLive    = "NadeoLiveServices";
+bool         canViewRecords  = false;
+bool         getting         = false;
+bool         hasClubVip      = false;
+bool         hasPlayerVip    = false;
+const string legacyLoadText  = "\\$AAAloading...";
+string       mapUid;
+bool         menuOpen        = false;
+uint         pinnedClub      = 0;
+int          raceRecordIndex = -1;
+const float  scale           = UI::GetScale();
+const float  stdRatio        = 16.0f / 9.0f;
+const string title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
+const uint64 waitTime        = 500;
 
 class Account {
     string id;
