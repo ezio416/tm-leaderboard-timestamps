@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2024-07-11
+// m 2025-03-19
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -183,7 +183,11 @@ void GetRecordsAsync() {
     }
 
     // todo: account for many club VIPs
-    Net::HttpRequest@ req = GetCoreAsync("/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId);
+    string url = "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId;
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    if (App.RootMap !is null && string(App.RootMap.MapType).Contains("TM_Stunt"))
+        url += "&gameMode=Stunt";
+    Net::HttpRequest@ req = GetCoreAsync(url);
 
     const int code = req.ResponseCode();
     if (code != 200) {
