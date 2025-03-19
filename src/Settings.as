@@ -1,11 +1,20 @@
 // c 2024-06-24
-// m 2024-06-24
+// m 2025-03-19
 
-[Setting hidden] bool   S_Enabled         = true;
-[Setting hidden] bool   S_HideWithOP      = false;
-[Setting hidden] bool   S_Timestamp       = true;
-[Setting hidden] string S_TimestampFormat = "%Y-%m-%d $AAA@ $G%H:%M:%S $AAA(%a)";
-[Setting hidden] bool   S_Recency         = true;
+[Setting hidden] bool   S_Enabled          = true;
+[Setting hidden] Font   S_Font             = Font::DroidSansBold;
+[Setting hidden] vec4   S_FontColor        = vec4(1.0f, 1.0f, 1.0f, 0.25f);
+[Setting hidden] int    S_FontSize         = 14;
+[Setting hidden] bool   S_HideWithOP       = false;
+[Setting hidden] bool   S_Legacy           = false;
+[Setting hidden] bool   S_Recency          = true;
+[Setting hidden] float  S_RecencyOffsetX   = 290.0f;
+[Setting hidden] float  S_RecencyOffsetY   = 24.0f;
+[Setting hidden] bool   S_RecencyLargest   = false;
+[Setting hidden] bool   S_Timestamp        = true;
+[Setting hidden] string S_TimestampFormat  = "%Y-%m-%d @ %H:%M:%S (%a)";
+[Setting hidden] float  S_TimestampOffsetX = 290.0f;
+[Setting hidden] float  S_TimestampOffsetY = -19.0f;
 
 [SettingsTab name="General" icon="Cogs"]
 void Settings_General() {
@@ -18,14 +27,44 @@ void Settings_General() {
 
     S_Enabled = UI::Checkbox("Enabled", S_Enabled);
     S_HideWithOP = UI::Checkbox("Show/hide with Openplanet UI", S_HideWithOP);
+    S_Legacy = UI::Checkbox("Legacy mode", S_Legacy);
+    HoverTooltipSetting("Shows a tooltip like how it used to be (less laggy)");
+
+    if (!S_Legacy) {
+        UI::Separator();
+
+        if (UI::BeginCombo("Font style", tostring(S_Font))) {
+            for (uint i = 0; i < int(Font::_Count); i++) {
+                const Font f = Font(i);
+                if (UI::Selectable(tostring(f), S_Font == f)) {
+                    S_Font = f;
+                    OnSettingsChanged();
+                }
+            }
+
+            UI::EndCombo();
+        }
+
+        const int fontSize = S_FontSize;
+        S_FontSize = UI::InputInt("Font size", S_FontSize);
+        if (S_FontSize != fontSize)
+            OnSettingsChanged();
+
+        S_FontColor = UI::InputColor4("Font color", S_FontColor);
+    }
 
     UI::Separator();
 
     S_Timestamp = UI::Checkbox("Show timestamp", S_Timestamp);
     HoverTooltipSetting("Shown in your local time");
     if (S_Timestamp) {
-        S_TimestampFormat = UI::InputText("Timestamp format", S_TimestampFormat);
-        HoverTooltipSetting("Uses strftime and supports Maniaplanet-style formatting\n(any \"$\" symbol will be used for this)");
+        if (!S_Legacy) {
+            S_TimestampOffsetX = UI::InputFloat("Offset X##ts", S_TimestampOffsetX);
+            S_TimestampOffsetY = UI::InputFloat("Offset Y##ts", S_TimestampOffsetY);
+        }
+
+        S_TimestampFormat = UI::InputText("Format", S_TimestampFormat);
+        HoverTooltipSetting("Uses strftime" + (S_Legacy ? " and supports Maniaplanet-style formatting\n(any \"$\" symbol will be used for this)" : ""));
 
         UI::Text("Preview: " + UnixToIso(Time::Stamp));
 
@@ -33,16 +72,26 @@ void Settings_General() {
             OpenBrowserURL("https://www.ibm.com/docs/en/workload-automation/10.2.0?topic=troubleshooting-date-time-format-reference-strftime");
         HoverTooltip("Open in browser");
 
-        UI::SameLine();
-        if (UI::Button(Icons::ExternalLink + " Color formatting"))
-            OpenBrowserURL("https://doc.maniaplanet.com/client/text-formatting");
-        HoverTooltip("Open in browser");
+        if (S_Legacy) {
+            UI::SameLine();
+            if (UI::Button(Icons::ExternalLink + " Color formatting"))
+                OpenBrowserURL("https://doc.maniaplanet.com/client/text-formatting");
+            HoverTooltip("Open in browser");
+        }
     }
 
     UI::Separator();
 
     S_Recency = UI::Checkbox("Show recency", S_Recency);
     HoverTooltipSetting("How long ago run was driven");
+    if (S_Recency) {
+        if (!S_Legacy) {
+            S_RecencyOffsetX = UI::InputFloat("Offset X##rc", S_RecencyOffsetX);
+            S_RecencyOffsetY = UI::InputFloat("Offset Y##rc", S_RecencyOffsetY);
+        }
+
+        S_RecencyLargest = UI::Checkbox("Only show largest value", S_RecencyLargest);
+    }
 }
 
 [SettingsTab name="Debug" icon="Bug" order=1]

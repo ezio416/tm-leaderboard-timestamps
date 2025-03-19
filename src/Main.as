@@ -1,22 +1,25 @@
 // c 2024-06-21
-// m 2024-09-02
+// m 2025-03-19
 
-dictionary@       accountsById   = dictionary();
-dictionary@       accountsByName = dictionary();
+dictionary@       accountsById    = dictionary();
+dictionary@       accountsByName  = dictionary();
 string[]          accountsQueue;
-const string      audienceCore   = "NadeoServices";
-const string      audienceLive   = "NadeoLiveServices";
-bool              canViewRecords = false;
-bool              getting        = false;
-bool              hasClubVip     = false;
-bool              hasPlayerVip   = false;
+const string      audienceCore    = "NadeoServices";
+const string      audienceLive    = "NadeoLiveServices";
+bool              canViewRecords  = false;
+bool              getting         = false;
+bool              hasClubVip      = false;
+bool              hasPlayerVip    = false;
+const string      legacyLoadText  = "\\$AAAloading...";
 string            mapUid;
-bool              menuOpen       = false;
-uint              pinnedClub     = 0;
-const float       scale          = UI::GetScale();
-SQLite::Database@ timeDB         = SQLite::Database(":memory:");
-const string      title          = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
-const uint64      waitTime       = 500;
+bool              menuOpen        = false;
+uint              pinnedClub      = 0;
+int               raceRecordIndex = -1;
+const float       scale           = UI::GetScale();
+const float       stdRatio        = 16.0f / 9.0f;
+SQLite::Database@ timeDB          = SQLite::Database(":memory:");
+const string      title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
+const uint64      waitTime        = 500;
 
 class Account {
     string id;
@@ -47,11 +50,15 @@ void Main() {
     bool wasDisplayRecords = false;
     bool wasInMap          = false;
 
+    ChangeFont();
+
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
     while (true) {
         yield();
 
         if (!S_Enabled) {
-            wasInMap = false;
+            wasInMap = InMap();
             continue;
         }
 
@@ -80,10 +87,18 @@ void Main() {
 
         const uint newPb = GetPersonalBestAsync();
         if (newPb > 0 && pb != newPb) {
+            const uint oldPb = pb;
             pb = newPb;
             gotNewPb = true;
             trace("new PB found");
-            startnew(GetTimestampsAsync);
+
+            if (false
+                || pb <= App.RootMap.TMObjective_AuthorTime
+                || (pb <= App.RootMap.TMObjective_GoldTime && oldPb > App.RootMap.TMObjective_GoldTime)
+                || (pb <= App.RootMap.TMObjective_SilverTime && oldPb > App.RootMap.TMObjective_SilverTime)
+                || (pb <= App.RootMap.TMObjective_BronzeTime && oldPb > App.RootMap.TMObjective_BronzeTime)
+            )
+                startnew(GetTimestampsAsync);
         }
 
         isDisplayRecords = AlwaysDisplayRecords();
@@ -110,45 +125,90 @@ void Main() {
     }
 }
 
+void OnSettingsChanged() {
+    if (S_FontSize < 8)
+        S_FontSize = 8;
+    if (S_FontSize > 72)
+        S_FontSize = 72;
+
+    ChangeFont();
+}
+
 void Render() {
     if (false
         || !S_Enabled
         || (S_HideWithOP && !UI::IsOverlayShown())
         || !canViewRecords
-        || menuOpen
+        || !InMap()
     )
         return;
 
-    const string name = HoveredName();
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
+    const string mapType = string(App.RootMap.MapType);
     if (false
-        || name.Length == 0
-        || name.StartsWith("\u0092")  // medals
+        || mapType.Contains("TM_Platform")
+        || mapType.Contains("TM_Royal")
+        // || mapType.Contains("TM_Stunt")
     )
         return;
 
-    UI::BeginTooltip();
-        if (true
-            && !S_Timestamp
-            && !S_Recency
-        )
-            UI::Text("\\$FA0Enable an option in the settings!");
-        else {
-            const string loadingText = "\\$AAAloading...";
+    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
+    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
 
-            if (accountsByName.Exists(name)) {
-                Account@ account = cast<Account@>(accountsByName[name]);
-                if (account.timestamp > 0) {
-                    if (S_Timestamp)
-                        UI::Text(UnixToIso(account.timestamp));
-                    if (S_Recency)
-                        UI::Text(FormatSeconds(Time::Stamp - account.timestamp) + " ago");
-                } else
-                    UI::Text(loadingText);
-            } else
-                UI::Text(loadingText);
+    if (CMAP is null || CMAP.UILayers.Length == 0)
+        return;
+
+    CGameManialinkPage@ RecordsTable;
+
+    if (raceRecordIndex > -1 && CMAP.UILayers.Length > uint(raceRecordIndex)) {
+        CGameUILayer@ Layer = CMAP.UILayers[raceRecordIndex];
+
+        if (true
+            && Layer !is null
+            && Layer.Type == CGameUILayer::EUILayerType::Normal
+            && Layer.ManialinkPageUtf8.Length > 0
+        ) {
+            const int start = Layer.ManialinkPageUtf8.IndexOf("<");
+            const int end = Layer.ManialinkPageUtf8.IndexOf(">");
+            if (start > -1 && end > -1) {
+                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_Record"))
+                    @RecordsTable = Layer.LocalPage;
+            }
         }
-    UI::EndTooltip();
+    }
+
+    if (RecordsTable is null) {
+        for (uint i = 0; i < CMAP.UILayers.Length; i++) {
+            CGameUILayer@ Layer = CMAP.UILayers[i];
+
+            if (false
+                || Layer is null
+                || Layer.Type != CGameUILayer::EUILayerType::Normal
+                || Layer.ManialinkPageUtf8.Length == 0
+            )
+                continue;
+
+            const int start = Layer.ManialinkPageUtf8.IndexOf("<");
+            const int end = Layer.ManialinkPageUtf8.IndexOf(">");
+            if (start == -1 || end == -1)
+                continue;
+
+            if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_Record")) {
+                @RecordsTable = Layer.LocalPage;
+                raceRecordIndex = i;
+                break;
+            }
+        }
+    }
+
+    if (RecordsTable is null)
+        return;
+
+    if (S_Legacy)
+        RenderLegacy(RecordsTable);
+    else
+        RenderAll(RecordsTable);
 }
 
 void RenderMenu() {
@@ -175,7 +235,13 @@ void GetTimestampsAsync() {
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
-    if (string(App.RootMap.MapType).Contains("TM_Stunt")) {
+    const string mapType = string(App.RootMap.MapType);
+    if (false
+        || mapType.Contains("TM_Platform")
+        || mapType.Contains("TM_Royal")
+        // || mapType.Contains("TM_Stunt")
+    ) {
+        warn(funcName + ": bad map type (" + mapType + ")");
         getting = false;
         return;
     }
@@ -186,12 +252,46 @@ void GetTimestampsAsync() {
         yield();
 
     GetRegionsTopAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetRegionsSurroundAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetPlayerClubInfoAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetClubSurroundAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetClubTopAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetClubVIPsAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetPlayerVIPsAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
 
     while (!NadeoServices::IsAuthenticated(audienceCore))
         yield();
@@ -202,77 +302,143 @@ void GetTimestampsAsync() {
     getting = false;
 }
 
-string HoveredName() {
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
-    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+void RenderAll(CGameManialinkPage@ RecordsTable) {
+    if (!S_Timestamp && !S_Recency)
+        return;
 
-    if (CMAP is null || CMAP.UILayers.Length == 0)
-        return "";
+    CGameManialinkFrame@ Container = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-rankings-container"));
+    if (Container is null)
+        return;
 
-    CGameManialinkPage@ RecordsTable;
+    // bool scroll = false;
 
-    for (uint i = 0; i < CMAP.UILayers.Length; i++) {
-        CGameUILayer@ Layer = CMAP.UILayers[i];
-
-        if (Layer is null)
-            continue;
-
-        if (Layer.ManialinkPageUtf8.Trim().SubStr(26, 11) == "Race_Record") {
-            @RecordsTable = Layer.LocalPage;
-            break;
-        }
+    CGameManialinkFrame@ RankingFrame = cast<CGameManialinkFrame@>(Container.GetFirstChild("frame-ranking"));
+    if (RankingFrame is null || !RankingFrame.Visible) {
+        @RankingFrame = cast<CGameManialinkFrame@>(Container.GetFirstChild("scroll-ranking"));  // VIPs
+        // scroll = true;
     }
+    if (RankingFrame is null || !RankingFrame.Visible)
+        return;
 
-    if (RecordsTable is null)
-        return "";
+    // if (scroll && RankingFrame.ScrollMax.y > 0.0f) {
+    //     UI::Text("count: " + (int(RankingFrame.ScrollMax.y / 6.0f) + 8));
+    //     UI::Text(
+    //         "scroll: "
+    //         + Text::Format("%.3f", RankingFrame.ScrollOffset.y)
+    //         + "/"
+    //         + Text::Format("%.3f", RankingFrame.ScrollMax.y)
+    //         + " ("
+    //         + Text::Format("%.1f", 100.0f * RankingFrame.ScrollOffset.y / RankingFrame.ScrollMax.y)
+    //         + " %)"
+    //     );
+    //     UI::Separator();
+    // }
+
+    nvg::FontFace(font);
+    nvg::FillColor(S_FontColor);
+    nvg::FontSize(S_FontSize);
+
+    for (uint i = 0; i < RankingFrame.Controls.Length && i < 9; i++)
+        RenderRanking(RankingFrame.Controls[i]);
+}
+
+void RenderLegacy(CGameManialinkPage@ RecordsTable) {
+    if (menuOpen)
+        return;
 
     CGameManialinkQuad@ Focused = cast<CGameManialinkQuad@>(RecordsTable.FocusedControl);
-    if (Focused is null)
-        return "";
+    if (Focused is null || !Focused.Visible || Focused.Parent is null)
+        return;
 
-    CGameManialinkFrame@ Parent = cast<CGameManialinkFrame@>(Focused.Parent);
-    if (Parent is null)
-        return "";
+    CGameManialinkLabel@ NameLabel = cast<CGameManialinkLabel@>(
+        Focused.Parent.GetFirstChild("cmgame-player-name_label-name")
+    );
+    if (NameLabel is null || NameLabel.Value.Length == 0)
+        return;
 
-    CGameManialinkFrame@ Frame1;
-    for (uint i = 0; i < Parent.Controls.Length; i++) {
-        CGameManialinkFrame@ Frame = cast<CGameManialinkFrame@>(Parent.Controls[i]);
-        if (Frame !is null) {
-            @Frame1 = Frame;
-            break;
+    const string name = string(NameLabel.Value);
+    if (false
+        || name.Length == 0
+        || name.StartsWith("\u0092")  // medals
+    )
+        return;
+
+    UI::BeginTooltip();
+
+    if (!S_Timestamp && !S_Recency)
+        UI::Text("\\$FA0Enable an option in the settings!");
+
+    else {
+        if (!accountsByName.Exists(name))
+            UI::Text(legacyLoadText);
+
+        else {
+            Account@ account = cast<Account@>(accountsByName[name]);
+            if (account.timestamp < 1)
+                UI::Text(legacyLoadText);
+
+            else {
+                if (S_Timestamp)
+                    UI::Text(UnixToIso(account.timestamp));
+
+                if (S_Recency)
+                    UI::Text(FormatSeconds(Time::Stamp - account.timestamp) + " ago");
+            }
         }
     }
-    if (Frame1 is null || Frame1.Controls.Length == 0)
-        return "";
 
-    CGameManialinkFrame@ Frame2 = cast<CGameManialinkFrame@>(Frame1.Controls[0]);
-    if (Frame2 is null || Frame2.Controls.Length == 0)
-        return "";
+    UI::EndTooltip();
+}
 
-    CGameManialinkFrame@ Frame3 = cast<CGameManialinkFrame@>(Frame2.Controls[0]);
-    if (Frame3 is null || Frame3.Controls.Length == 0)
-        return "";
+void RenderRanking(CGameManialinkControl@ control) {
+    CGameManialinkFrame@ frame = cast<CGameManialinkFrame@>(control);
+    if (frame is null || !frame.Visible)
+        return;
 
-    CGameManialinkLabel@ TheLabel;
-    for (uint i = 0; i < Frame3.Controls.Length; i++) {
-        CGameManialinkLabel@ Label = cast<CGameManialinkLabel@>(Frame3.Controls[i]);
-        if (Label !is null) {
-            @TheLabel = Label;
-            break;
-        }
+    CGameManialinkLabel@ NameLabel = cast<CGameManialinkLabel@>(
+        frame.GetFirstChild("cmgame-player-name_label-name")
+    );
+    if (NameLabel is null || NameLabel.Value.Length == 0)
+        return;
+
+    Account@ account;
+    const string name = string(NameLabel.Value);
+    if (accountsByName.Exists(name))
+        @account = cast<Account@>(accountsByName[name]);
+    if (account is null || account.timestamp < 1)
+            return;
+
+    const float w       = Math::Max(1, Draw::GetWidth());
+    const float h       = Math::Max(1, Draw::GetHeight());
+    const vec2  center  = vec2(w * 0.5f, h * 0.5f);
+    const float unit    = (w / h < stdRatio) ? w / 320.0f : h / 180.0f;
+    const vec2  scale   = vec2(unit, -unit);
+    const vec2  basePos = center + scale * NameLabel.AbsolutePosition_V3;
+
+    if (S_Timestamp) {
+        nvg::Text(
+            basePos + vec2(S_TimestampOffsetX, S_TimestampOffsetY),
+            TimeFormatString(
+                Text::StripFormatCodes(S_TimestampFormat),
+                account.timestamp
+            )
+        );
     }
-    if (TheLabel is null)
-        return "";
 
-    return TheLabel.Value;
+    if (S_Recency) {
+        nvg::Text(
+            basePos + vec2(S_RecencyOffsetX, S_RecencyOffsetY),
+            FormatSeconds(Time::Stamp - account.timestamp) + " ago"
+        );
+    }
 }
 
 void Reset() {
     accountsById.DeleteAll();
     accountsByName.DeleteAll();
-    hasClubVip   = false;
-    hasPlayerVip = false;
-    mapUid       = "";
-    pinnedClub   = 0;
+    hasClubVip      = false;
+    hasPlayerVip    = false;
+    mapUid          = "";
+    pinnedClub      = 0;
+    raceRecordIndex = -1;
 }

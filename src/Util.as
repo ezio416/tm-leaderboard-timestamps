@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2024-07-04
+// m 2025-03-19
 
 bool AlwaysDisplayRecords() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
@@ -34,11 +34,11 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     hours %= 24;
 
     if (days > 0)
-        return days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+        return days + "d" + (!S_RecencyLargest ? " " + hours + "h " + minutes + "m " + seconds + "s" : "");
     if (hours > 0)
-        return (day ? "0d " : "") + hours + "h " + minutes + "m " + seconds + "s";
+        return (day ? "0d " : "") + hours + "h" + (!S_RecencyLargest ? " " + minutes + "m " + seconds + "s" : "");
     if (minutes > 0)
-        return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m " + seconds + "s";
+        return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m" + (!S_RecencyLargest ? " " + seconds + "s" : "");
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
 }
 
@@ -110,6 +110,14 @@ bool JsonIsObject(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Object, name);
 }
 
+// prevents some crashes
+string TimeFormatString(const string &in format, int64 stamp = -1) {
+    if (format.Contains("% ") || format.Trim().EndsWith("%"))
+        return "ERROR";
+
+    return Time::FormatString(format, stamp);
+}
+
 string UnixToIso(uint timestamp) {
-    return Time::FormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
+    return TimeFormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
 }
