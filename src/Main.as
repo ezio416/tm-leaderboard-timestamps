@@ -136,6 +136,7 @@ void OnSettingsChanged() {
 void Render() {
     if (false
         || !S_Enabled
+        || !UI::IsGameUIVisible()
         || (S_HideWithOP && !UI::IsOverlayShown())
         || !canViewRecords
         || !InMap()
