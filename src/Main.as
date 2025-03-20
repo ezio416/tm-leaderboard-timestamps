@@ -13,6 +13,7 @@ bool         hasPlayerVip    = false;
 const string legacyLoadText  = "\\$AAAloading...";
 string       mapUid;
 bool         menuOpen        = false;
+bool         newLocalPb      = false;
 uint         pinnedClub      = 0;
 int          raceRecordIndex = -1;
 const float  scale           = UI::GetScale();
@@ -96,8 +97,11 @@ void Main() {
                 || (pb <= App.RootMap.TMObjective_GoldTime && oldPb > App.RootMap.TMObjective_GoldTime)
                 || (pb <= App.RootMap.TMObjective_SilverTime && oldPb > App.RootMap.TMObjective_SilverTime)
                 || (pb <= App.RootMap.TMObjective_BronzeTime && oldPb > App.RootMap.TMObjective_BronzeTime)
-            )
+            ) {
+                newLocalPb = false;
                 startnew(GetTimestampsAsync);
+            } else
+                newLocalPb = true;
         }
 
         isDisplayRecords = AlwaysDisplayRecords();
@@ -360,6 +364,7 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
     if (false
         || name.Length == 0
         || name.StartsWith("\u0092")  // medals
+        || (newLocalPb && name == string(GetApp().LocalPlayerInfo.Name))
     )
         return;
 
@@ -403,10 +408,12 @@ void RenderRanking(CGameManialinkControl@ control) {
 
     Account@ account;
     const string name = string(NameLabel.Value);
+    if (newLocalPb && name == string(GetApp().LocalPlayerInfo.Name))
+        return;
     if (accountsByName.Exists(name))
         @account = cast<Account@>(accountsByName[name]);
     if (account is null || account.timestamp < 1)
-            return;
+        return;
 
     const float w       = Math::Max(1, Draw::GetWidth());
     const float h       = Math::Max(1, Draw::GetHeight());
@@ -439,6 +446,7 @@ void Reset() {
     hasClubVip      = false;
     hasPlayerVip    = false;
     mapUid          = "";
+    newLocalPb      = false;
     pinnedClub      = 0;
     raceRecordIndex = -1;
 }
