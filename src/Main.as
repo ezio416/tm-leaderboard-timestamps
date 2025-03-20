@@ -353,15 +353,15 @@ void RenderAll(CGameManialinkPage@ RecordsTable) {
     if (!S_Timestamp && !S_Recency)
         return;
 
-    CGameManialinkFrame@ Container = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-rankings-container"));
-    if (Container is null)
-        return;
+    // CGameManialinkFrame@ Container = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-rankings-container"));
+    // if (Container is null)
+    //     return;
 
     // bool scroll = false;
 
-    CGameManialinkFrame@ RankingFrame = cast<CGameManialinkFrame@>(Container.GetFirstChild("frame-ranking"));
+    CGameManialinkFrame@ RankingFrame = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-ranking"));
     if (RankingFrame is null || !RankingFrame.Visible) {
-        @RankingFrame = cast<CGameManialinkFrame@>(Container.GetFirstChild("scroll-ranking"));  // VIPs
+        @RankingFrame = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("scroll-ranking"));  // VIPs
         // scroll = true;
     }
     if (RankingFrame is null || !RankingFrame.Visible)
