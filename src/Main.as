@@ -27,8 +27,8 @@ const uint64 waitTime        = 500;
 class Account {
     string id;
     string name;
-    uint   time;
-    int64  timestamp;
+    uint   time      = uint(-1);
+    int64  timestamp = 0;
 
     bool get_self() {
         return id == playerId;
@@ -130,7 +130,7 @@ void Main() {
                 // while (mapUid.Length == 0)
                 //     yield();
                 pb = GetPersonalBest();
-                print("existing pb: " + Time::Format(pb));
+                trace("existing pb: " + Time::Format(pb));
 
                 continue;
             }
@@ -470,10 +470,21 @@ void RenderRanking(CGameManialinkControl@ control) {
 
     Account@ account;
     const string name = string(NameLabel.Value);
-    if (accountsByName.Exists(name))
+
+    if (name == playerName && !accountsById.Exists(playerId) && !getting) {
+        // warn("setting newLocalPb true in render");
+        // newLocalPb = true;
+
+        // print("creating my account");
+
+        // @account = Account(playerId);
+        // account.name = playerName;
+        // account.time = pb;
+        // accountsById.Set(playerId, @account);
+        // accountsByName.Set(playerName, @account);
+
+    } else if (accountsByName.Exists(name))
         @account = cast<Account@>(accountsByName[name]);
-    if (account is null || account.timestamp < 1)
-        return;
 
     const float w       = Math::Max(1, Draw::GetWidth());
     const float h       = Math::Max(1, Draw::GetHeight());
@@ -482,10 +493,17 @@ void RenderRanking(CGameManialinkControl@ control) {
     const vec2  scale   = vec2(unit, -unit);
     const vec2  basePos = center + scale * NameLabel.AbsolutePosition_V3;
 
+    const bool newLocal = newLocalPb && name == playerName;
+    // UI::Text("newLocal: " + newLocal);
+
+    // if (account is null && !newLocal)
+    if (account is null || (!newLocal && account.timestamp == 0))
+        return;
+
     if (S_Timestamp)
         nvg::Text(
             basePos + vec2(S_TimestampOffsetX, S_TimestampOffsetY),
-            newLocalPb && account.self
+            newLocal
                 ? "not uploaded yet"
                 : TimeFormatString(
                     Text::StripFormatCodes(S_TimestampFormat),
@@ -496,7 +514,7 @@ void RenderRanking(CGameManialinkControl@ control) {
     if (S_Recency)
         nvg::Text(
             basePos + vec2(S_RecencyOffsetX, S_RecencyOffsetY),
-            newLocalPb && account.self
+            newLocal
                 ? "not uploaded yet"
                 : FormatSeconds(Time::Stamp - account.timestamp) + " ago"
         );

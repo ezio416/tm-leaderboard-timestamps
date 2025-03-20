@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-03-19
+// m 2025-03-20
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -255,15 +255,33 @@ void GetRecordsAsync() {
 
         if (account.self) {
             const uint _pb = GetPersonalBest();
-            // print("_pb " + _pb + ", account.time " + account.time);
+            print("_pb " + _pb + ", account.time " + account.time);
             if (true
                 && _pb != uint(-1)
                 && _pb != 0
                 && _pb != account.time
             ) {
                 warn("local pb (" + Time::Format(_pb) + ") does not match api (" + Time::Format(account.time) + ")");
+                // warn("setting newLocalPb true in api");
                 newLocalPb = true;
             }
+        }
+    }
+
+    if (!accountsById.Exists(playerId)) {
+        Account@ me = Account(playerId);
+        accountsById.Set(playerId, @me);
+        accountsByName.Set(playerName, @me);
+
+        me.time = GetPersonalBest();
+        print("me.time " + me.time);
+
+        if (true
+            && me.time != uint(-1)
+            && me.time != 0
+        ) {
+            warn("local pb (" + Time::Format(me.time) + ") is not uploaded");
+            newLocalPb = true;
         }
     }
 
