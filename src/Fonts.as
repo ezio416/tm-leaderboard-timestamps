@@ -5,7 +5,7 @@ nvg::Font font;
 Font currentFont = S_Font;
 
 enum Font {
-    // DroidSans,
+    // DroidSans,  // doesn't work for some reason, figure it out later
     DroidSansBold,
     DroidSansMono,
     _Count

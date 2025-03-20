@@ -229,7 +229,6 @@ void GetRecordsAsync() {
             continue;
 
         account.timestamp = timestamp;
-        // print(account);
     }
 
     trace(funcName + ": success");

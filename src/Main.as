@@ -157,7 +157,6 @@ void Main() {
         if (accountsQueue.Length > 0) {
             const string accountId = accountsQueue[0];
             const string name = NadeoServices::GetDisplayNameAsync(accountId);
-            // print("accountId " + accountId + " has name " + name);
             Account@ account = cast<Account@>(accountsById[accountId]);
             if (account !is null) {
                 account.name = name;
@@ -196,7 +195,6 @@ void Render() {
     if (false
         || mapType.Contains("TM_Platform")
         || mapType.Contains("TM_Royal")
-        // || mapType.Contains("TM_Stunt")
     )
         return;
 
@@ -286,7 +284,6 @@ void GetTimestampsAsync() {
     if (false
         || mapType.Contains("TM_Platform")
         || mapType.Contains("TM_Royal")
-        // || mapType.Contains("TM_Stunt")
     ) {
         warn(funcName + ": bad map type (" + mapType + ")");
         getting = false;
@@ -353,33 +350,11 @@ void RenderAll(CGameManialinkPage@ RecordsTable) {
     if (!S_Timestamp && !S_Recency)
         return;
 
-    // CGameManialinkFrame@ Container = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-rankings-container"));
-    // if (Container is null)
-    //     return;
-
-    // bool scroll = false;
-
     CGameManialinkFrame@ RankingFrame = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-ranking"));
-    if (RankingFrame is null || !RankingFrame.Visible) {
+    if (RankingFrame is null || !RankingFrame.Visible)
         @RankingFrame = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("scroll-ranking"));  // VIPs
-        // scroll = true;
-    }
     if (RankingFrame is null || !RankingFrame.Visible)
         return;
-
-    // if (scroll && RankingFrame.ScrollMax.y > 0.0f) {
-    //     UI::Text("count: " + (int(RankingFrame.ScrollMax.y / 6.0f) + 8));
-    //     UI::Text(
-    //         "scroll: "
-    //         + Text::Format("%.3f", RankingFrame.ScrollOffset.y)
-    //         + "/"
-    //         + Text::Format("%.3f", RankingFrame.ScrollMax.y)
-    //         + " ("
-    //         + Text::Format("%.1f", 100.0f * RankingFrame.ScrollOffset.y / RankingFrame.ScrollMax.y)
-    //         + " %)"
-    //     );
-    //     UI::Separator();
-    // }
 
     nvg::FontFace(font);
     nvg::FillColor(S_FontColor);
