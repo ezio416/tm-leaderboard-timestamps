@@ -16,6 +16,8 @@
 [Setting hidden] string S_TimestampFormat  = "%Y-%m-%d @ %H:%M:%S (%a)";
 [Setting hidden] float  S_TimestampOffsetX = 0.0f;
 [Setting hidden] float  S_TimestampOffsetY = 0.0f;
+[Setting hidden] bool   S_Warning          = true;
+// add hover enlarge thing for small resolutions
 
 [SettingsTab name="General" icon="Cogs"]
 void Settings_General() {
@@ -30,6 +32,10 @@ void Settings_General() {
     S_HideWithOP = UI::Checkbox("Show/hide with Openplanet UI", S_HideWithOP);
     S_Legacy = UI::Checkbox("Legacy mode", S_Legacy);
     HoverTooltipSetting("Shows a tooltip like how it used to be (less laggy)");
+    S_Warning = UI::Checkbox("Warn when a record is driven but won't upload right away", S_Warning);
+    HoverTooltipSetting(
+        "Records only upload if you have author medal, get a new medal, or exit the map."
+    );
 
     if (!S_Legacy) {
         UI::Separator();
@@ -92,6 +98,7 @@ void Settings_General() {
         }
 
         S_RecencyLargest = UI::Checkbox("Only show largest value", S_RecencyLargest);
+        HoverTooltipSetting("i.e. '17h 53m 04s' gets shortened to '17h'");
     }
 }
 
@@ -114,6 +121,7 @@ void Settings_Debug() {
     UI::Text("accountsQueue: " + accountsQueue.Length);
     UI::Text("total accounts: " + accountsById.GetSize());
     UI::Text("getting data: " + getting);
+    UI::Text("new local PB: " + newLocalPb);
 
     UI::BeginDisabled(getting);
     if (UI::Button(Icons::Refresh + " Force refresh"))
@@ -121,12 +129,13 @@ void Settings_Debug() {
     UI::EndDisabled();
     HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 
-    if (UI::BeginTable("##table-debug", 5, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
+    if (UI::BeginTable("##table-debug", 6, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
         UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(0.0f, 0.0f, 0.0f, 0.5f));
 
         UI::TableSetupScrollFreeze(0, 1);
         UI::TableSetupColumn("account ID",     UI::TableColumnFlags::WidthFixed, scale * 260.0f);
         UI::TableSetupColumn("account name");
+        UI::TableSetupColumn("time",           UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (epoch)",     UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (formatted)", UI::TableColumnFlags::WidthFixed, Draw::MeasureString(UnixToIso(1727265600)).x);
         UI::TableSetupColumn("recency",        UI::TableColumnFlags::WidthFixed, scale * 100.0f);
@@ -150,6 +159,9 @@ void Settings_Debug() {
 
                 UI::TableNextColumn();
                 UI::Text(account.name);
+
+                UI::TableNextColumn();
+                UI::Text(Time::Format(account.time));
 
                 UI::TableNextColumn();
                 UI::Text(tostring(account.timestamp));

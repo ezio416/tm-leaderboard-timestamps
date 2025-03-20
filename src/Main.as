@@ -14,7 +14,10 @@ const string legacyLoadText  = "\\$AAAloading...";
 string       mapUid;
 bool         menuOpen        = false;
 bool         newLocalPb      = false;
+uint         pb              = 0;
 uint         pinnedClub      = 0;
+string       playerId;
+string       playerName;
 int          raceRecordIndex = -1;
 const float  scale           = UI::GetScale();
 const float  stdRatio        = 16.0f / 9.0f;
@@ -24,7 +27,12 @@ const uint64 waitTime        = 500;
 class Account {
     string id;
     string name;
+    uint   time;
     int64  timestamp;
+
+    bool get_self() {
+        return id == playerId;
+    }
 
     Account() { }
     Account(const string &in id) {
@@ -32,7 +40,7 @@ class Account {
     }
 
     string ToString() {
-        return "Account ( id: " + id + ", name: " + name + ", ts: " + timestamp + " )";
+        return "Account ( id: " + id + ", name: " + name + ", time: " + time + ", ts: " + timestamp + " )";
     }
 }
 
@@ -46,13 +54,15 @@ void Main() {
 
     bool inMap             = false;
     bool isDisplayRecords  = false;
-    uint pb                = 0;
     bool wasDisplayRecords = false;
     bool wasInMap          = false;
 
     ChangeFont();
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
+    playerId = App.LocalPlayerInfo.WebServicesUserId;
+    playerName = App.LocalPlayerInfo.Name;
 
     if (!S_InitV2) {
         switch(int(Draw::GetHeight())) {
@@ -115,6 +125,14 @@ void Main() {
                 enteredMap = true;
                 trace("entered map");
                 startnew(GetTimestampsAsync);
+                // pb = uint(-1);
+
+                // while (mapUid.Length == 0)
+                //     yield();
+                pb = GetPersonalBest();
+                print("existing pb: " + Time::Format(pb));
+
+                continue;
             }
         }
 
@@ -127,21 +145,45 @@ void Main() {
 
         const uint newPb = GetPersonalBestAsync();
         if (newPb > 0 && pb != newPb) {
-            const uint oldPb = pb;
+            const uint oldPb = pb != 0 ? pb : uint(-1);
             pb = newPb;
             gotNewPb = true;
-            trace("new PB found");
 
-            if (false
+            if (oldPb == uint(-1))
+                trace("new pb found (" + Time::Format(newPb) + ")");
+            else
+                trace("new pb found (was " + Time::Format(oldPb)
+                    + ", now " + Time::Format(newPb)
+                    + ", diff of " + Time::Format(oldPb - newPb)
+                + ")");
+
+            // if (accountsById.Exists(playerId)) {
+            //     Account@ me = cast<Account@>(accountsById[playerId]);
+            //     if (me.time != pb)
+            //         warn("local pb (" + Time::Format(pb) + ") does not match api (" + Time::Format(me.time) + ")");
+            //     else
+            //         print("fine and dandy");
+            // } else
+            //     warn("account not found: " + playerId);
+
+            newLocalPb = !(false  // negating the logic of an uploaded record like this is simpler
                 || pb <= App.RootMap.TMObjective_AuthorTime
-                || (pb <= App.RootMap.TMObjective_GoldTime && oldPb > App.RootMap.TMObjective_GoldTime)
-                || (pb <= App.RootMap.TMObjective_SilverTime && oldPb > App.RootMap.TMObjective_SilverTime)
-                || (pb <= App.RootMap.TMObjective_BronzeTime && oldPb > App.RootMap.TMObjective_BronzeTime)
-            ) {
-                newLocalPb = false;
-                startnew(GetTimestampsAsync);
+                || (oldPb > App.RootMap.TMObjective_GoldTime   && pb <= App.RootMap.TMObjective_GoldTime)
+                || (oldPb > App.RootMap.TMObjective_SilverTime && pb <= App.RootMap.TMObjective_SilverTime)
+                || (oldPb > App.RootMap.TMObjective_BronzeTime && pb <= App.RootMap.TMObjective_BronzeTime)
+            );
+
+            if (newLocalPb) {
+                warn("new local pb driven that won't upload until the player exits the map");
+
+                if (S_Warning)
+                    UI::ShowNotification(
+                        title,
+                        "New PB of " + Time::Format(pb) + " won't upload until you exit the map. Try getting another medal!",
+                        10000
+                    );
             } else
-                newLocalPb = true;
+                GetTimestampsAsync();
         }
 
         isDisplayRecords = AlwaysDisplayRecords();
@@ -264,8 +306,8 @@ void RenderMenu() {
 }
 
 void GetTimestampsAsync() {
-    while (getting)
-        yield();
+    if (getting)
+        return;
 
     const string funcName = "GetTimestampsAsync";
     trace(funcName + ": starting");
@@ -382,13 +424,15 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
     if (false
         || name.Length == 0
         || name.StartsWith("\u0092")  // medals
-        || (newLocalPb && name == string(GetApp().LocalPlayerInfo.Name))
     )
         return;
 
     UI::BeginTooltip();
 
-    if (!S_Timestamp && !S_Recency)
+    if (newLocalPb && name == playerName)
+        UI::Text("\\$A00Record not uploaded yet!\nGet a new medal or exit the map.");
+
+    else if (!S_Timestamp && !S_Recency)
         UI::Text("\\$FA0Enable an option in the settings!");
 
     else {
@@ -426,8 +470,6 @@ void RenderRanking(CGameManialinkControl@ control) {
 
     Account@ account;
     const string name = string(NameLabel.Value);
-    if (newLocalPb && name == string(GetApp().LocalPlayerInfo.Name))
-        return;
     if (accountsByName.Exists(name))
         @account = cast<Account@>(accountsByName[name]);
     if (account is null || account.timestamp < 1)
@@ -440,22 +482,24 @@ void RenderRanking(CGameManialinkControl@ control) {
     const vec2  scale   = vec2(unit, -unit);
     const vec2  basePos = center + scale * NameLabel.AbsolutePosition_V3;
 
-    if (S_Timestamp) {
+    if (S_Timestamp)
         nvg::Text(
             basePos + vec2(S_TimestampOffsetX, S_TimestampOffsetY),
-            TimeFormatString(
-                Text::StripFormatCodes(S_TimestampFormat),
-                account.timestamp
-            )
+            newLocalPb && account.self
+                ? "not uploaded yet"
+                : TimeFormatString(
+                    Text::StripFormatCodes(S_TimestampFormat),
+                    account.timestamp
+                )
         );
-    }
 
-    if (S_Recency) {
+    if (S_Recency)
         nvg::Text(
             basePos + vec2(S_RecencyOffsetX, S_RecencyOffsetY),
-            FormatSeconds(Time::Stamp - account.timestamp) + " ago"
+            newLocalPb && account.self
+                ? "not uploaded yet"
+                : FormatSeconds(Time::Stamp - account.timestamp) + " ago"
         );
-    }
 }
 
 void Reset() {
@@ -464,7 +508,6 @@ void Reset() {
     hasClubVip      = false;
     hasPlayerVip    = false;
     mapUid          = "";
-    newLocalPb      = false;
     pinnedClub      = 0;
     raceRecordIndex = -1;
 }

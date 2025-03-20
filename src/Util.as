@@ -42,6 +42,38 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
 }
 
+uint GetPersonalBest() {
+    if (!InMap()) {
+        warn("not in map");
+        return 0;
+    }
+
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
+    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+
+    if (false
+        || CMAP is null
+        || CMAP.ScoreMgr is null
+        || App.RootMap is null
+        || App.UserManagerScript is null
+        || App.UserManagerScript.Users.Length == 0
+        || App.UserManagerScript.Users[0] is null
+    ) {
+        warn("something wrong");
+        return 0;
+    }
+
+    return CMAP.ScoreMgr.Map_GetRecord_v2(
+        App.UserManagerScript.Users[0].Id,
+        App.RootMap.EdChallengeId,
+        "PersonalBest",
+        "",
+        "TimeAttack",
+        ""
+    );
+}
+
 uint GetPersonalBestAsync() {
     if (!InMap())
         return 0;
@@ -63,16 +95,7 @@ uint GetPersonalBestAsync() {
 
     sleep(500);  // allow game to process PB, 500ms should be enough time
 
-    if (false
-        || CMAP is null
-        || CMAP.ScoreMgr is null
-        || App.UserManagerScript is null
-        || App.UserManagerScript.Users.Length == 0
-        || App.UserManagerScript.Users[0] is null
-    )
-        return 0;
-
-    return CMAP.ScoreMgr.Map_GetRecord_v2(App.UserManagerScript.Users[0].Id, mapUid, "PersonalBest", "", "TimeAttack", "");
+    return GetPersonalBest();
 }
 
 void HoverTooltip(const string &in msg) {

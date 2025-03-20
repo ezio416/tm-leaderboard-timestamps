@@ -62,7 +62,7 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
         }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetClubSurroundAsync() {
@@ -120,7 +120,7 @@ string GetMapIdAsync() {
 
     const string mapId = string(map["mapId"]);
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 
     return mapId;
 }
@@ -162,7 +162,7 @@ void GetPlayerClubInfoAsync() {
 
     pinnedClub = uint(parsed["pinnedClub"]);
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetPlayerVIPsAsync() {
@@ -182,12 +182,17 @@ void GetRecordsAsync() {
         return;
     }
 
-    // todo: account for many club VIPs
-    string url = "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId;
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    if (App.RootMap !is null && string(App.RootMap.MapType).Contains("TM_Stunt"))
-        url += "&gameMode=Stunt";
-    Net::HttpRequest@ req = GetCoreAsync(url);
+    const bool stunt = true
+        && App.RootMap !is null
+        && string(App.RootMap.MapType).Contains("TM_Stunt")
+    ;
+
+    // todo: account for many club VIPs
+    Net::HttpRequest@ req = GetCoreAsync(
+        "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId
+        + (stunt ? "&gameMode=Stunt" : "")
+    );
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -205,6 +210,8 @@ void GetRecordsAsync() {
     }
 
     for (uint i = 0; i < parsed.Length; i++) {
+        // print("record " + i);
+
         Json::Value@ record = parsed[i];
         if (!JsonIsObject(record, funcName + ": record " + i))
             continue;
@@ -215,6 +222,11 @@ void GetRecordsAsync() {
         }
 
         const string accountId = record["accountId"];
+        Account@ account = cast<Account@>(accountsById[accountId]);
+        if (account is null) {
+            warn("null account");
+            continue;
+        }
 
         if (!record.HasKey("timestamp")) {
             warn(funcName + ": record " + i + " missing key 'timestamp'");
@@ -222,16 +234,40 @@ void GetRecordsAsync() {
         }
 
         const string timestampIso = string(record["timestamp"]);
-        const int64 timestamp = Time::ParseFormatString("%FT%T", timestampIso);
+        account.timestamp = Time::ParseFormatString("%FT%T", timestampIso);
 
-        Account@ account = cast<Account@>(accountsById[accountId]);
-        if (account is null)
+        if (!record.HasKey("recordScore")) {
+            warn(funcName + ": record " + i + " missing key 'recordScore'");
+            continue;
+        }
+
+        Json::Value@ recordScore = record["recordScore"];
+        if (!JsonIsObject(recordScore, funcName + ": recordScore " + i))
             continue;
 
-        account.timestamp = timestamp;
+        if (!recordScore.HasKey("time")) {
+            warn(funcName + ": recordScore " + i + " missing key 'time'");
+            continue;
+        }
+
+        account.time = uint(recordScore["time"]);
+        // print("time " + i + " " + account.time);
+
+        if (account.self) {
+            const uint _pb = GetPersonalBest();
+            // print("_pb " + _pb + ", account.time " + account.time);
+            if (true
+                && _pb != uint(-1)
+                && _pb != 0
+                && _pb != account.time
+            ) {
+                warn("local pb (" + Time::Format(_pb) + ") does not match api (" + Time::Format(account.time) + ")");
+                newLocalPb = true;
+            }
+        }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
@@ -296,7 +332,7 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
         }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetRegionsSurroundAsync() {
@@ -345,5 +381,5 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
         }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
