@@ -54,6 +54,46 @@ void Main() {
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
+    if (!S_InitV2) {
+        switch(int(Draw::GetHeight())) {
+            case 720:
+                S_FontSize         = 6;
+                S_TimestampOffsetX = 96.0f;
+                S_TimestampOffsetY = -6.0f;
+                S_RecencyOffsetX   = 96.0f;
+                S_RecencyOffsetY   = 9.0f;
+                break;
+
+            case 1080:
+                S_FontSize         = 7;
+                S_TimestampOffsetX = 144.0f;
+                S_TimestampOffsetY = -9.0f;
+                S_RecencyOffsetX   = 144.0f;
+                S_RecencyOffsetY   = 12.0f;
+                break;
+
+            case 1440:
+                S_FontSize         = 10;
+                S_TimestampOffsetX = 192.0f;
+                S_TimestampOffsetY = -12.0f;
+                S_RecencyOffsetX   = 192.0f;
+                S_RecencyOffsetY   = 17.0f;
+                break;
+
+            case 2160:
+                S_FontSize         = 14;
+                S_TimestampOffsetX = 288.0f;
+                S_TimestampOffsetY = -19.0f;
+                S_RecencyOffsetX   = 288.0f;
+                S_RecencyOffsetY   = 24.0f;
+                break;
+
+            default:;
+        }
+
+        S_InitV2 = true;
+    }
+
     while (true) {
         yield();
 
@@ -129,8 +169,8 @@ void Main() {
 }
 
 void OnSettingsChanged() {
-    if (S_FontSize < 8)
-        S_FontSize = 8;
+    if (S_FontSize < 6)
+        S_FontSize = 6;
     if (S_FontSize > 72)
         S_FontSize = 72;
 
@@ -148,6 +188,9 @@ void Render() {
         return;
 
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
+
+    if (App.Network.PlaygroundClientScriptAPI.IsInGameMenuDisplayed)
+        return;
 
     const string mapType = string(App.RootMap.MapType);
     if (false

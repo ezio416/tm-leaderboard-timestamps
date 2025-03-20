@@ -6,15 +6,16 @@
 [Setting hidden] vec4   S_FontColor        = vec4(1.0f, 1.0f, 1.0f, 0.25f);
 [Setting hidden] int    S_FontSize         = 14;
 [Setting hidden] bool   S_HideWithOP       = false;
+[Setting hidden] bool   S_InitV2           = false;
 [Setting hidden] bool   S_Legacy           = false;
 [Setting hidden] bool   S_Recency          = true;
-[Setting hidden] float  S_RecencyOffsetX   = 290.0f;
-[Setting hidden] float  S_RecencyOffsetY   = 24.0f;
+[Setting hidden] float  S_RecencyOffsetX   = 0.0f;
+[Setting hidden] float  S_RecencyOffsetY   = 0.0f;
 [Setting hidden] bool   S_RecencyLargest   = false;
 [Setting hidden] bool   S_Timestamp        = true;
 [Setting hidden] string S_TimestampFormat  = "%Y-%m-%d @ %H:%M:%S (%a)";
-[Setting hidden] float  S_TimestampOffsetX = 290.0f;
-[Setting hidden] float  S_TimestampOffsetY = -19.0f;
+[Setting hidden] float  S_TimestampOffsetX = 0.0f;
+[Setting hidden] float  S_TimestampOffsetY = 0.0f;
 
 [SettingsTab name="General" icon="Cogs"]
 void Settings_General() {
