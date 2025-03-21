@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-03-19
+// m 2025-03-21
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -11,6 +11,7 @@ bool         getting         = false;
 bool         hasClubVip      = false;
 bool         hasPlayerVip    = false;
 const string legacyLoadText  = "\\$AAAloading...";
+string       mapId;
 string       mapUid;
 bool         menuOpen        = false;
 bool         newLocalPb      = false;
@@ -19,6 +20,8 @@ uint         pinnedClub      = 0;
 string       playerId;
 string       playerName;
 int          raceRecordIndex = -1;
+// uint[]       requestIds;
+// Request@[]   requests;
 const float  scale           = UI::GetScale();
 const float  stdRatio        = 16.0f / 9.0f;
 const string title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
@@ -45,9 +48,15 @@ class Account {
 }
 
 void Main() {
+    const string funcName = "Main";
+
     canViewRecords = Permissions::ViewRecords();
-    if (!canViewRecords)
+    if (!canViewRecords) {
+        Log::Error("player can't view records", funcName);
         return;
+    }
+
+    Intercept::Init();
 
     NadeoServices::AddAudience(audienceCore);
     NadeoServices::AddAudience(audienceLive);
@@ -62,10 +71,15 @@ void Main() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
     playerId = App.LocalPlayerInfo.WebServicesUserId;
+    Log::Debug("playerId: " + playerId, funcName);
     playerName = App.LocalPlayerInfo.Name;
+    Log::Debug("playerName: " + playerName, funcName);
 
     if (!S_InitV2) {
-        switch(int(Draw::GetHeight())) {
+        const int height = int(Draw::GetHeight());
+        Log::Debug("vertical resolution: " + height, funcName);
+
+        switch (height) {
             case 720:
                 S_FontSize         = 6;
                 S_TimestampOffsetX = 96.0f;
@@ -123,14 +137,14 @@ void Main() {
 
             if (inMap) {
                 enteredMap = true;
-                trace("entered map");
+                Log::Info("entered map");
                 startnew(GetTimestampsAsync);
                 // pb = uint(-1);
 
                 // while (mapUid.Length == 0)
                 //     yield();
                 pb = GetPersonalBest();
-                trace("existing pb: " + Time::Format(pb));
+                Log::Info("existing pb: " + (pb != uint(-1) ? Time::Format(pb) : "none"));
 
                 continue;
             }
@@ -138,6 +152,8 @@ void Main() {
 
         if (!inMap) {
             Reset();
+            mapId = "";
+            newLocalPb = false;
             continue;
         }
 
@@ -150,12 +166,14 @@ void Main() {
             gotNewPb = true;
 
             if (oldPb == uint(-1))
-                trace("new pb found (" + Time::Format(newPb) + ")");
+                Log::Info("new pb found (" + Time::Format(newPb) + ")");
             else
-                trace("new pb found (was " + Time::Format(oldPb)
+                Log::Info("new pb found (was " + Time::Format(oldPb)
                     + ", now " + Time::Format(newPb)
                     + ", diff of " + Time::Format(oldPb - newPb)
                 + ")");
+
+            // startnew(RefreshLeaderboardAsync);
 
             // if (accountsById.Exists(playerId)) {
             //     Account@ me = cast<Account@>(accountsById[playerId]);
@@ -174,7 +192,7 @@ void Main() {
             );
 
             if (newLocalPb) {
-                warn("new local pb driven that won't upload until the player exits the map");
+                Log::Warn("new local pb driven that won't upload until the player exits the map");
 
                 if (S_Warning)
                     UI::ShowNotification(
@@ -191,7 +209,7 @@ void Main() {
             wasDisplayRecords = isDisplayRecords;
 
             if (isDisplayRecords && !enteredMap && !gotNewPb) {
-                trace("leaderboard refreshed");
+                Log::Info("leaderboard refreshed");
                 startnew(GetTimestampsAsync);
             }
         }
@@ -208,6 +226,9 @@ void Main() {
         }
     }
 }
+
+void OnDestroyed() { Intercept::Reset(); }
+void OnDisabled()  { Intercept::Reset(); }
 
 void OnSettingsChanged() {
     if (S_FontSize < 6)
@@ -306,11 +327,12 @@ void RenderMenu() {
 }
 
 void GetTimestampsAsync() {
+    const string funcName = "GetTimestampsAsync";
+
     if (getting)
         return;
 
-    const string funcName = "GetTimestampsAsync";
-    trace(funcName + ": starting");
+    Log::Info("starting", funcName);
     getting = true;
 
     Reset();
@@ -323,68 +345,67 @@ void GetTimestampsAsync() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
     const string mapType = string(App.RootMap.MapType);
-    if (false
-        || mapType.Contains("TM_Platform")
-        || mapType.Contains("TM_Royal")
+    if (true
+        && !mapType.Contains("TM_Race")
+        && !mapType.Contains("TM_Stunt")
     ) {
-        warn(funcName + ": bad map type (" + mapType + ")");
+        Log::Debug("bad map type: " + mapType, funcName);
         getting = false;
         return;
     }
 
     mapUid = App.RootMap.EdChallengeId;
 
-    while (!NadeoServices::IsAuthenticated(audienceLive))
+    // GetAccountsAsync();
+
+    const int64 start = Time::Now;
+    while (false
+        || !clubSurround
+        || !clubTop
+        || !clubVip
+        || !regionSurround
+        || !regionTop
+        || !vip
+    ) {
         yield();
 
-    GetRegionsTopAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
 
-    GetRegionsSurroundAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
-
-    GetPlayerClubInfoAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
-
-    GetClubSurroundAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
-
-    GetClubTopAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
-
-    GetClubVIPsAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
-
-    GetPlayerVIPsAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
+        if (Time::Now - start > 5000) {
+            GetPlayerClubInfoAsync();
+            if (!InMap()) {
+                getting = false;
+                return;
+            }
+            if (!vip)
+                GetPlayerVIPsAsync();
+            if (!clubVip)
+                GetClubVIPsAsync();
+            if (!clubSurround)
+                GetClubSurroundAsync();
+            if (!clubTop)
+                GetClubTopAsync();
+            if (!regionSurround)
+                GetRegionsSurroundAsync();
+            if (!regionTop)
+                GetRegionsTopAsync();
+        }
     }
 
     while (!NadeoServices::IsAuthenticated(audienceCore))
         yield();
 
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
     GetRecordsAsync();
 
-    trace(funcName + ": success");
+    Log::Info("success", funcName);
     getting = false;
 }
 
@@ -528,4 +549,13 @@ void Reset() {
     mapUid          = "";
     pinnedClub      = 0;
     raceRecordIndex = -1;
+    // requestIds      = { };
+    // requests        = { };
+
+    clubSurround   = false;
+    clubTop        = false;
+    clubVip        = false;
+    regionSurround = false;
+    regionTop      = false;
+    vip            = false;
 }

@@ -1,24 +1,29 @@
 // c 2024-06-24
-// m 2025-03-19
+// m 2025-03-20
 
 bool AlwaysDisplayRecords() {
     CTrackMania@ App = cast<CTrackMania@>(GetApp());
 
-    if (App.CurrentProfile is null || !App.CurrentProfile.Interface_AlwaysDisplayRecords)
+    if (!App.CurrentProfile.Interface_AlwaysDisplayRecords)
         return false;
 
     return true;
 }
 
 bool CheckJsonType(Json::Value@ value, Json::Type desired, const string &in name) {
+    const string funcName = "CheckJsonType";
+
     if (value is null) {
-        warn(name + " is null");
+        Log::Warn(name + " is null", funcName);
         return false;
     }
 
     const Json::Type type = value.GetType();
     if (type != desired) {
-        warn(name + " is a(n) " + tostring(type) + ", not a(n) " + tostring(desired));
+        Log::Warn(
+            name + " is a(n) " + tostring(type) + ", not a(n) " + tostring(desired) + ": " + Json::Write(value),
+            funcName
+        );
         return false;
     }
 
@@ -43,8 +48,10 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
 }
 
 uint GetPersonalBest() {
+    const string funcName = "GetPersonalBest";
+
     if (!InMap()) {
-        warn("not in map");
+        Log::Warn("not in map", funcName);
         return 0;
     }
 
@@ -60,7 +67,7 @@ uint GetPersonalBest() {
         || App.UserManagerScript.Users.Length == 0
         || App.UserManagerScript.Users[0] is null
     ) {
-        warn("something wrong");
+        Log::Warn("something wrong", funcName);
         return 0;
     }
 
@@ -99,11 +106,11 @@ uint GetPersonalBestAsync() {
 }
 
 void HoverTooltip(const string &in msg) {
-    if (!UI::IsItemHovered())
+    if (!UI::IsItemHovered(UI::HoveredFlags::AllowWhenDisabled))
         return;
 
     UI::BeginTooltip();
-        UI::Text(msg);
+    UI::Text(msg);
     UI::EndTooltip();
 }
 
@@ -121,6 +128,13 @@ bool JsonIsArray(Json::Value@ value, const string &in name) {
 
 bool JsonIsObject(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Object, name);
+}
+
+void RefreshLeaderboardAsync() {
+    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    App.CurrentProfile.Interface_AlwaysDisplayRecords = !App.CurrentProfile.Interface_AlwaysDisplayRecords;
+    yield();
+    App.CurrentProfile.Interface_AlwaysDisplayRecords = !App.CurrentProfile.Interface_AlwaysDisplayRecords;
 }
 
 // prevents some crashes
