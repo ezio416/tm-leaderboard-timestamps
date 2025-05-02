@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-01
+// m 2025-05-02
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -129,6 +129,60 @@ string GetMapIdAsync() {
     // trace(funcName + ": success");
 
     return mapId;
+}
+
+void GetMedalGhostsAsync() {
+    const string funcName = "GetMedalGhostsAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/medals");
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
+        return;
+
+    if (!parsed.HasKey("medals")) {
+        warn(funcName + ": parsed missing key 'medals'");
+        return;
+    }
+
+    Json::Value@ medals = parsed.Get("medals");
+    if (!JsonIsArray(medals, funcName + ": medals"))
+        return;
+
+    for (uint i = 0; i < medals.Length; i++) {
+        Json::Value@ medal = medals[i];
+        if (!JsonIsObject(medal, funcName + ": medal " + i))
+            continue;
+
+        if (!medal.HasKey("medal")) {
+            warn(funcName + ": medal " + i + " missing key 'medal'");
+            continue;
+        }
+
+        // I think "\u0092" is a symbol prepended to UI labels for auto-translation
+        const string medalName = "\u0092" + string(medal["medal"]);
+
+        if (!medal.HasKey("accountId")) {
+            warn(funcName + ": medal " + i + " missing key 'accountId'");
+            continue;
+        }
+
+        const string accountId = string(medal["accountId"]);
+
+        Account@ account = Account(accountId);
+        account.name = medalName;
+        accountsById.Set(accountId, @account);
+        accountsByName.Set(medalName, @account);
+        medalGhosts.Set(medalName, @account);
+    }
 }
 
 void GetPlayerClubInfoAsync() {

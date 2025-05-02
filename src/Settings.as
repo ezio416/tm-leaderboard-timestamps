@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-01
+// m 2025-05-02
 
 [Setting hidden] bool   S_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
@@ -17,7 +17,7 @@
 [Setting hidden] float  S_TimestampOffsetX = 0.0f;
 [Setting hidden] float  S_TimestampOffsetY = 0.0f;
 [Setting hidden] bool   S_Warning          = true;
-// add hover enlarge thing for small resolutions
+// todo: add hover enlarge thing for small resolutions
 
 [SettingsTab name="General" icon="Cogs"]
 void Settings_General() {
@@ -123,6 +123,7 @@ void Settings_Debug() {
     UI::Text("getting data: " + getting);
     UI::Text("new local PB: " + newLocalPb);
     UI::Text("surround score: " + Time::Format(surroundScore));
+    UI::Text("medal ghosts: " + medalGhosts.GetSize());
 
     UI::BeginDisabled(getting);
     if (UI::Button(Icons::Refresh + " Force refresh"))
@@ -135,7 +136,7 @@ void Settings_Debug() {
 
         UI::TableSetupScrollFreeze(0, 1);
         UI::TableSetupColumn("account ID",     UI::TableColumnFlags::WidthFixed, scale * 260.0f);
-        UI::TableSetupColumn("account name");
+        UI::TableSetupColumn("name");
         UI::TableSetupColumn("time",           UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (epoch)",     UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (formatted)", UI::TableColumnFlags::WidthFixed, Draw::MeasureString(UnixToIso(1727265600)).x);

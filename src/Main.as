@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-05-01
+// m 2025-05-02
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -12,6 +12,7 @@ bool         hasClubVip      = false;
 bool         hasPlayerVip    = false;
 const string legacyLoadText  = "\\$AAAloading...";
 string       mapUid;
+dictionary@  medalGhosts     = dictionary();
 bool         menuOpen        = false;
 bool         newLocalPb      = false;
 bool         onlySurround    = false;
@@ -127,10 +128,7 @@ void Main() {
                 enteredMap = true;
                 trace("entered map");
                 startnew(GetTimestampsAsync);
-                // pb = uint(-1);
 
-                // while (mapUid.Length == 0)
-                //     yield();
                 pb = GetPersonalBest();
                 trace("existing pb: " + Time::Format(pb));
 
@@ -140,6 +138,9 @@ void Main() {
 
         if (!inMap) {
             Reset();
+            accountsById.DeleteAll();
+            accountsByName.DeleteAll();
+            medalGhosts.DeleteAll();
             surroundScore = 0;
             continue;
         }
@@ -349,6 +350,9 @@ void GetTimestampsAsync() {
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
+    if (medalGhosts.GetSize() == 0)
+        GetMedalGhostsAsync();
+
     if (!surround) {
         GetRegionsTopAsync();
         if (!InMap()) {
@@ -437,10 +441,7 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
         return;
 
     const string name = string(NameLabel.Value);
-    if (false
-        || name.Length == 0
-        || name.StartsWith("\u0092")  // medals
-    )
+    if (name.Length == 0)
         return;
 
     UI::BeginTooltip();
@@ -537,8 +538,8 @@ void RenderRanking(CGameManialinkControl@ control) {
 }
 
 void Reset() {
-    accountsById.DeleteAll();
-    accountsByName.DeleteAll();
+    // accountsById.DeleteAll();  // don't delete all now that we support medals
+    // accountsByName.DeleteAll();
     accountsQueue   = {};
     hasClubVip      = false;
     hasPlayerVip    = false;
@@ -546,4 +547,23 @@ void Reset() {
     newLocalPb      = false;
     pinnedClub      = 0;
     raceRecordIndex = -1;
+
+    string[]@ ids = accountsById.GetKeys();
+    string id;
+    for (uint i = 0; i < ids.Length; i++) {
+        id = ids[i];
+
+        Account@ account = cast<Account>(accountsById[id]);
+        if (account is null) {
+            accountsById.Delete(id);
+            continue;
+        }
+
+        if (!account.name.StartsWith("\u0092")) {
+            accountsById.Delete(id);
+
+            if (accountsByName.Exists(account.name))
+                accountsByName.Delete(account.name);
+        }
+    }
 }
