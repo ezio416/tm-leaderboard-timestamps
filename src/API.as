@@ -66,11 +66,11 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     // trace(funcName + ": success");
 }
 
-void GetClubSurroundAsync(uint score = 0) {
+void GetClubSurroundAsync() {
     GetClubAsync(
         "GetClubSurroundAsync",
         "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1"
-            + (score > 0 ? "?score=" + score : "")
+            + (surroundScore > 0 ? "?score=" + surroundScore : "")
     );
 }
 
@@ -362,11 +362,11 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     // trace(funcName + ": success");
 }
 
-void GetRegionsSurroundAsync(uint score = 0) {
+void GetRegionsSurroundAsync() {
     GetRegionsAsync(
         "GetRegionsSurroundAsync",
         "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1"
-            + (score > 0 ? "?score=" + score : "")
+            + (surroundScore > 0 ? "?score=" + surroundScore : "")
     );
 }
 

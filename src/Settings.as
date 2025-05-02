@@ -122,6 +122,7 @@ void Settings_Debug() {
     UI::Text("total accounts: " + accountsById.GetSize());
     UI::Text("getting data: " + getting);
     UI::Text("new local PB: " + newLocalPb);
+    UI::Text("surround score: " + Time::Format(surroundScore));
 
     UI::BeginDisabled(getting);
     if (UI::Button(Icons::Refresh + " Force refresh"))

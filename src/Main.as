@@ -140,6 +140,7 @@ void Main() {
 
         if (!inMap) {
             Reset();
+            surroundScore = 0;
             continue;
         }
 
@@ -147,6 +148,8 @@ void Main() {
 
         const uint newPb = GetPersonalBestAsync();
         if (newPb > 0 && pb != newPb) {
+            surroundScore = newPb;
+
             const uint oldPb = pb != 0 ? pb : uint(-1);
             pb = newPb;
             gotNewPb = true;
@@ -178,7 +181,6 @@ void Main() {
             if (newLocalPb) {
                 warn("new local pb driven that won't upload until the player exits the map");
                 onlySurround = true;
-                surroundScore = newPb;
 
                 if (S_Warning)
                     UI::ShowNotification(
@@ -355,7 +357,7 @@ void GetTimestampsAsync() {
         }
     }
 
-    GetRegionsSurroundAsync(surround ? surroundScore : 0);
+    GetRegionsSurroundAsync();
     if (!InMap()) {
         getting = false;
         return;
@@ -367,7 +369,7 @@ void GetTimestampsAsync() {
         return;
     }
 
-    GetClubSurroundAsync(surround ? surroundScore : 0);
+    GetClubSurroundAsync();
     if (!InMap()) {
         getting = false;
         return;
