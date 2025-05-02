@@ -27,6 +27,7 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -105,6 +106,7 @@ string GetMapIdAsync() {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsArray(parsed, funcName + ": parsed"))
         return "";
 
@@ -142,6 +144,7 @@ void GetPlayerClubInfoAsync() {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -205,6 +208,7 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsArray(parsed, funcName + ": parsed"))
         return;
 
@@ -304,6 +308,7 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -381,6 +386,7 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
