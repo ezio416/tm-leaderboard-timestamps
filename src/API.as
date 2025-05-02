@@ -65,8 +65,12 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     // trace(funcName + ": success");
 }
 
-void GetClubSurroundAsync() {
-    GetClubAsync("GetClubSurroundAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1");
+void GetClubSurroundAsync(uint score = 0) {
+    GetClubAsync(
+        "GetClubSurroundAsync",
+        "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1"
+            + (score > 0 ? "?score=" + score : "")
+    );
 }
 
 void GetClubTopAsync() {
@@ -274,7 +278,7 @@ void GetRecordsAsync() {
         accountsByName.Set(playerName, @me);
 
         me.time = GetPersonalBest();
-        print("me.time " + me.time);
+        // print("me.time " + me.time);
 
         if (true
             && me.time != uint(-1)
@@ -353,8 +357,12 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     // trace(funcName + ": success");
 }
 
-void GetRegionsSurroundAsync() {
-    GetRegionsAsync("GetRegionsSurroundAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1");
+void GetRegionsSurroundAsync(uint score = 0) {
+    GetRegionsAsync(
+        "GetRegionsSurroundAsync",
+        "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1"
+            + (score > 0 ? "?score=" + score : "")
+    );
 }
 
 void GetRegionsTopAsync() {

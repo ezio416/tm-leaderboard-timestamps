@@ -14,6 +14,7 @@ const string legacyLoadText  = "\\$AAAloading...";
 string       mapUid;
 bool         menuOpen        = false;
 bool         newLocalPb      = false;
+bool         onlySurround    = false;
 uint         pb              = 0;
 uint         pinnedClub      = 0;
 string       playerId;
@@ -21,6 +22,7 @@ string       playerName;
 int          raceRecordIndex = -1;
 const float  scale           = UI::GetScale();
 const float  stdRatio        = 16.0f / 9.0f;
+uint         surroundScore   = 0;
 const string title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
 const uint64 waitTime        = 500;
 
@@ -175,6 +177,8 @@ void Main() {
 
             if (newLocalPb) {
                 warn("new local pb driven that won't upload until the player exits the map");
+                onlySurround = true;
+                surroundScore = newPb;
 
                 if (S_Warning)
                     UI::ShowNotification(
@@ -182,8 +186,9 @@ void Main() {
                         "New PB of " + Time::Format(pb) + " won't upload until you exit the map. Try getting another medal!",
                         10000
                     );
-            } else
-                GetTimestampsAsync();
+            }
+
+            GetTimestampsAsync();
         }
 
         isDisplayRecords = AlwaysDisplayRecords();
@@ -306,6 +311,10 @@ void RenderMenu() {
 }
 
 void GetTimestampsAsync() {
+    const bool surround = onlySurround;
+    if (surround)
+        onlySurround = false;
+
     if (getting)
         return;
 
@@ -313,7 +322,8 @@ void GetTimestampsAsync() {
     trace(funcName + ": starting");
     getting = true;
 
-    Reset();
+    if (!surround)
+        Reset();
 
     if (!InMap()) {
         getting = false;
@@ -337,13 +347,15 @@ void GetTimestampsAsync() {
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
-    GetRegionsTopAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
+    if (!surround) {
+        GetRegionsTopAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
     }
 
-    GetRegionsSurroundAsync();
+    GetRegionsSurroundAsync(surround ? surroundScore : 0);
     if (!InMap()) {
         getting = false;
         return;
@@ -355,28 +367,30 @@ void GetTimestampsAsync() {
         return;
     }
 
-    GetClubSurroundAsync();
+    GetClubSurroundAsync(surround ? surroundScore : 0);
     if (!InMap()) {
         getting = false;
         return;
     }
 
-    GetClubTopAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
+    if (!surround) {
+        GetClubTopAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
 
-    GetClubVIPsAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
-    }
+        GetClubVIPsAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
 
-    GetPlayerVIPsAsync();
-    if (!InMap()) {
-        getting = false;
-        return;
+        GetPlayerVIPsAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
     }
 
     while (!NadeoServices::IsAuthenticated(audienceCore))
