@@ -167,16 +167,16 @@ void Settings_Debug() {
                 UI::Text(account.name);
 
                 UI::TableNextColumn();
-                UI::Text(Time::Format(account.time));
+                UI::Text(account.time != uint(-1) ? Time::Format(account.time) : "-");
 
                 UI::TableNextColumn();
-                UI::Text(tostring(account.timestamp));
+                UI::Text(account.timestamp != 0 ? tostring(account.timestamp) : "-");
 
                 UI::TableNextColumn();
-                UI::Text(UnixToIso(account.timestamp));
+                UI::Text(account.timestamp != 0 ? UnixToIso(account.timestamp) : "-");
 
                 UI::TableNextColumn();
-                UI::Text(FormatSeconds(now - account.timestamp));
+                UI::Text(account.timestamp != 0 ? FormatSeconds(now - account.timestamp) : "-");
             }
         }
 
