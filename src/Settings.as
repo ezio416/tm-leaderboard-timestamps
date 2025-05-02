@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-03-19
+// m 2025-05-01
 
 [Setting hidden] bool   S_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
@@ -149,6 +149,12 @@ void Settings_Debug() {
         while (clipper.Step()) {
             for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
                 Account@ account = cast<Account@>(accountsById[accountIds[i]]);
+                if (account is null) {
+                    UI::TableNextRow();
+                    UI::TableNextColumn();
+                    UI::Text("\\$F00null account");
+                    break;
+                }
 
                 UI::TableNextRow();
 

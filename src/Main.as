@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-03-19
+// m 2025-05-01
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -523,6 +523,7 @@ void RenderRanking(CGameManialinkControl@ control) {
 void Reset() {
     accountsById.DeleteAll();
     accountsByName.DeleteAll();
+    accountsQueue   = {};
     hasClubVip      = false;
     hasPlayerVip    = false;
     mapUid          = "";

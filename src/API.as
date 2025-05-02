@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-03-20
+// m 2025-05-01
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -255,7 +255,7 @@ void GetRecordsAsync() {
 
         if (account.self) {
             const uint _pb = GetPersonalBest();
-            print("_pb " + _pb + ", account.time " + account.time);
+            // print("_pb " + _pb + ", account.time " + account.time);
             if (true
                 && _pb != uint(-1)
                 && _pb != 0
