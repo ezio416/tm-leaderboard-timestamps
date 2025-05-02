@@ -541,6 +541,7 @@ void Reset() {
     hasClubVip      = false;
     hasPlayerVip    = false;
     mapUid          = "";
+    newLocalPb      = false;
     pinnedClub      = 0;
     raceRecordIndex = -1;
 }
