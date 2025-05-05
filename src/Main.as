@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-05-02
+// m 2025-05-05
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -350,8 +350,8 @@ void GetTimestampsAsync() {
     while (!NadeoServices::IsAuthenticated(audienceLive))
         yield();
 
-    if (medalGhosts.GetSize() == 0)
-        GetMedalGhostsAsync();
+    // if (medalGhosts.GetSize() == 0)
+    //     GetMedalGhostsAsync();  // problem if a top record is a medal ghost, todo later
 
     if (!surround) {
         GetRegionsTopAsync();
