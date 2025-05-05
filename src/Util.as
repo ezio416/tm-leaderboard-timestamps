@@ -1,8 +1,8 @@
 // c 2024-06-24
-// m 2025-03-19
+// m 2025-05-05
 
 bool AlwaysDisplayRecords() {
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     if (App.CurrentProfile is null || !App.CurrentProfile.Interface_AlwaysDisplayRecords)
         return false;
@@ -48,9 +48,9 @@ uint GetPersonalBest() {
         return 0;
     }
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
-    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+    auto App = cast<CTrackMania>(GetApp());
+    auto Network = cast<CTrackManiaNetwork>(App.Network);
+    auto CMAP = Network.ClientManiaAppPlayground;
 
     if (false
         || CMAP is null
@@ -78,9 +78,9 @@ uint GetPersonalBestAsync() {
     if (!InMap())
         return 0;
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
-    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+    auto App = cast<CTrackMania>(GetApp());
+    auto Network = cast<CTrackManiaNetwork>(App.Network);
+    auto CMAP = Network.ClientManiaAppPlayground;
 
     if (false
         || CMAP is null
@@ -108,7 +108,7 @@ void HoverTooltip(const string &in msg) {
 }
 
 bool InMap() {
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     return App.RootMap !is null
         && App.CurrentPlayground !is null

@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-02
+// m 2025-05-05
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -243,7 +243,7 @@ void GetRecordsAsync() {
         return;
     }
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
     const bool stunt = true
         && App.RootMap !is null
         && string(App.RootMap.MapType).Contains("TM_Stunt")
@@ -284,7 +284,7 @@ void GetRecordsAsync() {
         }
 
         const string accountId = record["accountId"];
-        Account@ account = cast<Account@>(accountsById[accountId]);
+        auto account = cast<Account>(accountsById[accountId]);
         if (account is null) {
             warn("null account");
             continue;

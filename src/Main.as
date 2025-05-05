@@ -62,7 +62,7 @@ void Main() {
 
     ChangeFont();
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     playerId = App.LocalPlayerInfo.WebServicesUserId;
     playerName = App.LocalPlayerInfo.Name;
@@ -164,7 +164,7 @@ void Main() {
                 + ")");
 
             // if (accountsById.Exists(playerId)) {
-            //     Account@ me = cast<Account@>(accountsById[playerId]);
+            //     auto me = cast<Account>(accountsById[playerId]);
             //     if (me.time != pb)
             //         warn("local pb (" + Time::Format(pb) + ") does not match api (" + Time::Format(me.time) + ")");
             //     else
@@ -207,7 +207,7 @@ void Main() {
         if (accountsQueue.Length > 0) {
             const string accountId = accountsQueue[0];
             const string name = NadeoServices::GetDisplayNameAsync(accountId);
-            Account@ account = cast<Account@>(accountsById[accountId]);
+            auto account = cast<Account>(accountsById[accountId]);
             if (account !is null) {
                 account.name = name;
                 accountsByName[name] = @account;
@@ -236,7 +236,7 @@ void Render() {
     )
         return;
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     if (App.Network.PlaygroundClientScriptAPI.IsInGameMenuDisplayed)
         return;
@@ -248,7 +248,7 @@ void Render() {
     )
         return;
 
-    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
+    auto Network = cast<CTrackManiaNetwork>(App.Network);
     CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
 
     if (CMAP is null || CMAP.UILayers.Length == 0)
@@ -333,7 +333,7 @@ void GetTimestampsAsync() {
         return;
     }
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     const string mapType = string(App.RootMap.MapType);
     if (false
@@ -412,9 +412,9 @@ void RenderAll(CGameManialinkPage@ RecordsTable) {
     if (!S_Timestamp && !S_Recency)
         return;
 
-    CGameManialinkFrame@ RankingFrame = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("frame-ranking"));
+    auto RankingFrame = cast<CGameManialinkFrame>(RecordsTable.GetFirstChild("frame-ranking"));
     if (RankingFrame is null || !RankingFrame.Visible)
-        @RankingFrame = cast<CGameManialinkFrame@>(RecordsTable.GetFirstChild("scroll-ranking"));  // VIPs
+        @RankingFrame = cast<CGameManialinkFrame>(RecordsTable.GetFirstChild("scroll-ranking"));  // VIPs
     if (RankingFrame is null || !RankingFrame.Visible)
         return;
 
@@ -430,11 +430,11 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
     if (menuOpen)
         return;
 
-    CGameManialinkQuad@ Focused = cast<CGameManialinkQuad@>(RecordsTable.FocusedControl);
+    auto Focused = cast<CGameManialinkQuad>(RecordsTable.FocusedControl);
     if (Focused is null || !Focused.Visible || Focused.Parent is null)
         return;
 
-    CGameManialinkLabel@ NameLabel = cast<CGameManialinkLabel@>(
+    auto NameLabel = cast<CGameManialinkLabel>(
         Focused.Parent.GetFirstChild("cmgame-player-name_label-name")
     );
     if (NameLabel is null || NameLabel.Value.Length == 0)
@@ -457,7 +457,7 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
             UI::Text(legacyLoadText);
 
         else {
-            Account@ account = cast<Account@>(accountsByName[name]);
+            auto account = cast<Account>(accountsByName[name]);
             if (account.timestamp < 1)
                 UI::Text(legacyLoadText);
 
@@ -475,11 +475,11 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
 }
 
 void RenderRanking(CGameManialinkControl@ control) {
-    CGameManialinkFrame@ frame = cast<CGameManialinkFrame@>(control);
+    auto frame = cast<CGameManialinkFrame>(control);
     if (frame is null || !frame.Visible)
         return;
 
-    CGameManialinkLabel@ NameLabel = cast<CGameManialinkLabel@>(
+    auto NameLabel = cast<CGameManialinkLabel>(
         frame.GetFirstChild("cmgame-player-name_label-name")
     );
     if (NameLabel is null || NameLabel.Value.Length == 0)
@@ -501,7 +501,7 @@ void RenderRanking(CGameManialinkControl@ control) {
         // accountsByName.Set(playerName, @account);
 
     } else if (accountsByName.Exists(name))
-        @account = cast<Account@>(accountsByName[name]);
+        @account = cast<Account>(accountsByName[name]);
 
     const float w       = Math::Max(1, Draw::GetWidth());
     const float h       = Math::Max(1, Draw::GetHeight());
@@ -553,7 +553,7 @@ void Reset() {
     for (uint i = 0; i < ids.Length; i++) {
         id = ids[i];
 
-        Account@ account = cast<Account>(accountsById[id]);
+        auto account = cast<Account>(accountsById[id]);
         if (account is null) {
             accountsById.Delete(id);
             continue;
