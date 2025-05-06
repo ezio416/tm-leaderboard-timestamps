@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-05-05
+// m 2025-05-06
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -441,7 +441,7 @@ void RenderLegacy(CGameManialinkPage@ RecordsTable) {
         return;
 
     const string name = string(NameLabel.Value);
-    if (name.Length == 0)
+    if (name.StartsWith("\u0092"))
         return;
 
     UI::BeginTooltip();
