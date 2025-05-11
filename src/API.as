@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2024-07-11
+// m 2025-05-05
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -27,6 +27,7 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -62,11 +63,15 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
         }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetClubSurroundAsync() {
-    GetClubAsync("GetClubSurroundAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1");
+    GetClubAsync(
+        "GetClubSurroundAsync",
+        "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/club/" + pinnedClub + "/surround/1/1"
+            + (surroundScore > 0 ? "?score=" + surroundScore : "")
+    );
 }
 
 void GetClubTopAsync() {
@@ -101,6 +106,7 @@ string GetMapIdAsync() {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsArray(parsed, funcName + ": parsed"))
         return "";
 
@@ -120,9 +126,63 @@ string GetMapIdAsync() {
 
     const string mapId = string(map["mapId"]);
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 
     return mapId;
+}
+
+void GetMedalGhostsAsync() {
+    const string funcName = "GetMedalGhostsAsync";
+    trace(funcName + ": starting");
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/medals");
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
+        return;
+    }
+
+    Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed"))
+        return;
+
+    if (!parsed.HasKey("medals")) {
+        warn(funcName + ": parsed missing key 'medals'");
+        return;
+    }
+
+    Json::Value@ medals = parsed.Get("medals");
+    if (!JsonIsArray(medals, funcName + ": medals"))
+        return;
+
+    for (uint i = 0; i < medals.Length; i++) {
+        Json::Value@ medal = medals[i];
+        if (!JsonIsObject(medal, funcName + ": medal " + i))
+            continue;
+
+        if (!medal.HasKey("medal")) {
+            warn(funcName + ": medal " + i + " missing key 'medal'");
+            continue;
+        }
+
+        // I think "\u0092" is a symbol prepended to UI labels for auto-translation
+        const string medalName = "\u0092" + string(medal["medal"]);
+
+        if (!medal.HasKey("accountId")) {
+            warn(funcName + ": medal " + i + " missing key 'accountId'");
+            continue;
+        }
+
+        const string accountId = string(medal["accountId"]);
+
+        Account@ account = Account(accountId);
+        account.name = medalName;
+        accountsById.Set(accountId, @account);
+        accountsByName.Set(medalName, @account);
+        medalGhosts.Set(medalName, @account);
+    }
 }
 
 void GetPlayerClubInfoAsync() {
@@ -138,6 +198,7 @@ void GetPlayerClubInfoAsync() {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -162,7 +223,7 @@ void GetPlayerClubInfoAsync() {
 
     pinnedClub = uint(parsed["pinnedClub"]);
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetPlayerVIPsAsync() {
@@ -182,8 +243,17 @@ void GetRecordsAsync() {
         return;
     }
 
+    auto App = cast<CTrackMania>(GetApp());
+    const bool stunt = true
+        && App.RootMap !is null
+        && string(App.RootMap.MapType).Contains("TM_Stunt")
+    ;
+
     // todo: account for many club VIPs
-    Net::HttpRequest@ req = GetCoreAsync("/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId);
+    Net::HttpRequest@ req = GetCoreAsync(
+        "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId
+        + (stunt ? "&gameMode=Stunt" : "")
+    );
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -192,6 +262,7 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsArray(parsed, funcName + ": parsed"))
         return;
 
@@ -201,6 +272,8 @@ void GetRecordsAsync() {
     }
 
     for (uint i = 0; i < parsed.Length; i++) {
+        // print("record " + i);
+
         Json::Value@ record = parsed[i];
         if (!JsonIsObject(record, funcName + ": record " + i))
             continue;
@@ -211,6 +284,11 @@ void GetRecordsAsync() {
         }
 
         const string accountId = record["accountId"];
+        auto account = cast<Account>(accountsById[accountId]);
+        if (account is null) {
+            warn("null account");
+            continue;
+        }
 
         if (!record.HasKey("timestamp")) {
             warn(funcName + ": record " + i + " missing key 'timestamp'");
@@ -218,17 +296,58 @@ void GetRecordsAsync() {
         }
 
         const string timestampIso = string(record["timestamp"]);
-        const int64 timestamp = IsoToUnix(timestampIso);
+        account.timestamp = Time::ParseFormatString("%FT%T", timestampIso);
 
-        Account@ account = cast<Account@>(accountsById[accountId]);
-        if (account is null)
+        if (!record.HasKey("recordScore")) {
+            warn(funcName + ": record " + i + " missing key 'recordScore'");
+            continue;
+        }
+
+        Json::Value@ recordScore = record["recordScore"];
+        if (!JsonIsObject(recordScore, funcName + ": recordScore " + i))
             continue;
 
-        account.timestamp = timestamp;
-        // print(account);
+        if (!recordScore.HasKey("time")) {
+            warn(funcName + ": recordScore " + i + " missing key 'time'");
+            continue;
+        }
+
+        account.time = uint(recordScore["time"]);
+        // print("time " + i + " " + account.time);
+
+        if (account.self) {
+            const uint _pb = GetPersonalBest();
+            // print("_pb " + _pb + ", account.time " + account.time);
+            if (true
+                && _pb != uint(-1)
+                && _pb != 0
+                && _pb != account.time
+            ) {
+                warn("local pb (" + Time::Format(_pb) + ") does not match api (" + Time::Format(account.time) + ")");
+                // warn("setting newLocalPb true in api");
+                newLocalPb = true;
+            }
+        }
     }
 
-    trace(funcName + ": success");
+    if (!accountsById.Exists(playerId)) {
+        Account@ me = Account(playerId);
+        accountsById.Set(playerId, @me);
+        accountsByName.Set(playerName, @me);
+
+        me.time = GetPersonalBest();
+        // print("me.time " + me.time);
+
+        if (true
+            && me.time != uint(-1)
+            && me.time != 0
+        ) {
+            warn("local pb (" + Time::Format(me.time) + ") is not uploaded");
+            newLocalPb = true;
+        }
+    }
+
+    // trace(funcName + ": success");
 }
 
 void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
@@ -243,6 +362,7 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -293,11 +413,15 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
         }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }
 
 void GetRegionsSurroundAsync() {
-    GetRegionsAsync("GetRegionsSurroundAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1");
+    GetRegionsAsync(
+        "GetRegionsSurroundAsync",
+        "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/1/1"
+            + (surroundScore > 0 ? "?score=" + surroundScore : "")
+    );
 }
 
 void GetRegionsTopAsync() {
@@ -316,6 +440,7 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
+    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
     if (!JsonIsObject(parsed, funcName + ": parsed"))
         return;
 
@@ -342,5 +467,5 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
         }
     }
 
-    trace(funcName + ": success");
+    // trace(funcName + ": success");
 }

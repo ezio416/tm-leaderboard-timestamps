@@ -1,8 +1,8 @@
 // c 2024-06-24
-// m 2024-07-04
+// m 2025-05-05
 
 bool AlwaysDisplayRecords() {
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     if (App.CurrentProfile is null || !App.CurrentProfile.Interface_AlwaysDisplayRecords)
         return false;
@@ -34,21 +34,53 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     hours %= 24;
 
     if (days > 0)
-        return days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+        return days + "d" + (!S_RecencyLargest ? " " + hours + "h " + minutes + "m " + seconds + "s" : "");
     if (hours > 0)
-        return (day ? "0d " : "") + hours + "h " + minutes + "m " + seconds + "s";
+        return (day ? "0d " : "") + hours + "h" + (!S_RecencyLargest ? " " + minutes + "m " + seconds + "s" : "");
     if (minutes > 0)
-        return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m " + seconds + "s";
+        return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m" + (!S_RecencyLargest ? " " + seconds + "s" : "");
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
+}
+
+uint GetPersonalBest() {
+    if (!InMap()) {
+        warn("not in map");
+        return 0;
+    }
+
+    auto App = cast<CTrackMania>(GetApp());
+    auto Network = cast<CTrackManiaNetwork>(App.Network);
+    auto CMAP = Network.ClientManiaAppPlayground;
+
+    if (false
+        || CMAP is null
+        || CMAP.ScoreMgr is null
+        || App.RootMap is null
+        || App.UserManagerScript is null
+        || App.UserManagerScript.Users.Length == 0
+        || App.UserManagerScript.Users[0] is null
+    ) {
+        warn("something wrong");
+        return 0;
+    }
+
+    return CMAP.ScoreMgr.Map_GetRecord_v2(
+        App.UserManagerScript.Users[0].Id,
+        App.RootMap.EdChallengeId,
+        "PersonalBest",
+        "",
+        "TimeAttack",
+        ""
+    );
 }
 
 uint GetPersonalBestAsync() {
     if (!InMap())
         return 0;
 
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
-    CTrackManiaNetwork@ Network = cast<CTrackManiaNetwork@>(App.Network);
-    CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
+    auto App = cast<CTrackMania>(GetApp());
+    auto Network = cast<CTrackManiaNetwork>(App.Network);
+    auto CMAP = Network.ClientManiaAppPlayground;
 
     if (false
         || CMAP is null
@@ -63,16 +95,7 @@ uint GetPersonalBestAsync() {
 
     sleep(500);  // allow game to process PB, 500ms should be enough time
 
-    if (false
-        || CMAP is null
-        || CMAP.ScoreMgr is null
-        || App.UserManagerScript is null
-        || App.UserManagerScript.Users.Length == 0
-        || App.UserManagerScript.Users[0] is null
-    )
-        return 0;
-
-    return CMAP.ScoreMgr.Map_GetRecord_v2(App.UserManagerScript.Users[0].Id, mapUid, "PersonalBest", "", "TimeAttack", "");
+    return GetPersonalBest();
 }
 
 void HoverTooltip(const string &in msg) {
@@ -85,21 +108,11 @@ void HoverTooltip(const string &in msg) {
 }
 
 bool InMap() {
-    CTrackMania@ App = cast<CTrackMania@>(GetApp());
+    auto App = cast<CTrackMania>(GetApp());
 
     return App.RootMap !is null
         && App.CurrentPlayground !is null
         && App.Editor is null;
-}
-
-// courtesy of MisfitMaid
-int64 IsoToUnix(const string &in inTime) {
-    SQLite::Statement@ s = timeDB.Prepare("SELECT unixepoch(?) as x");
-    s.Bind(1, inTime);
-    s.Execute();
-    s.NextRow();
-    s.NextRow();
-    return s.GetColumnInt64("x");
 }
 
 bool JsonIsArray(Json::Value@ value, const string &in name) {
@@ -110,6 +123,14 @@ bool JsonIsObject(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Object, name);
 }
 
+// prevents some crashes
+string TimeFormatString(const string &in format, int64 stamp = -1) {
+    if (format.Contains("% ") || format.Trim().EndsWith("%"))
+        return "ERROR";
+
+    return Time::FormatString(format, stamp);
+}
+
 string UnixToIso(uint timestamp) {
-    return Time::FormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
+    return TimeFormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
 }

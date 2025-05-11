@@ -2,7 +2,7 @@
 name = "Leaderboard Timestamps"
 author = "Ezio"
 category = "Overlay"
-version = "1.1.0"
+version = "2.0.4"
 siteid = 570
 
 [script]
