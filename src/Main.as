@@ -151,7 +151,7 @@ void Main() {
             pb = newPb;
             gotNewPb = true;
 
-            print("pb: " + Time::Format(pb) + ", oldPb: " + Time::Format(oldPb) + ", newPb: " + Time::Format(newPb));
+            trace("pb: " + Time::Format(pb) + ", oldPb: " + Time::Format(oldPb) + ", newPb: " + Time::Format(newPb));
 
             if (oldPb == uint(-1))
                 trace("new pb found (" + Time::Format(newPb) + ")");
