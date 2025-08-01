@@ -1,13 +1,22 @@
 // c 2024-06-24
-// m 2025-05-05
+// m 2025-08-01
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
 
     Net::HttpRequest@ req = NadeoServices::Get(audience, endpoint);
     req.Start();
-    while (!req.Finished())
+    while (!req.Finished()) {
         yield();
+
+        if (cancel) {
+            req.Cancel();
+            while (!req.Finished()) {  // why do I have to do this
+                yield();
+            }
+            return null;
+        }
+    }
 
     return req;
 }
@@ -19,6 +28,10 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     trace(funcName + ": starting");
 
     Net::HttpRequest@ req = GetLiveAsync(endpoint);
+
+    if (req is null) {
+        return;
+    }
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -99,6 +112,10 @@ string GetMapIdAsync() {
 
     Net::HttpRequest@ req = GetCoreAsync("/maps/?mapUidList=" + mapUid);
 
+    if (req is null) {
+        return "";
+    }
+
     const int code = req.ResponseCode();
     if (code != 200) {
         warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
@@ -136,6 +153,10 @@ void GetMedalGhostsAsync() {
     trace(funcName + ": starting");
 
     Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/medals");
+
+    if (req is null) {
+        return;
+    }
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -190,6 +211,10 @@ void GetPlayerClubInfoAsync() {
     trace(funcName + ": starting");
 
     Net::HttpRequest@ req = GetLiveAsync("/api/token/club/player/info");
+
+    if (req is null) {
+        return;
+    }
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -254,6 +279,10 @@ void GetRecordsAsync() {
         "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId
         + (stunt ? "&gameMode=Stunt" : "")
     );
+
+    if (req is null) {
+        return;
+    }
 
     const int code = req.ResponseCode();
     if (code != 200) {
@@ -355,6 +384,10 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
 
     Net::HttpRequest@ req = GetLiveAsync(endpoint);
 
+    if (req is null) {
+        return;
+    }
+
     const int code = req.ResponseCode();
     if (code != 200) {
         warn(funcName + ": code: " + code + " | error: " + req.Error() + " | resp: " + req.String());
@@ -432,6 +465,10 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
     trace(funcName + ": starting");
 
     Net::HttpRequest@ req = GetLiveAsync(endpoint);
+
+    if (req is null) {
+        return;
+    }
 
     const int code = req.ResponseCode();
     if (code != 200) {

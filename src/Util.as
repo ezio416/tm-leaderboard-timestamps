@@ -10,6 +10,18 @@ bool AlwaysDisplayRecords() {
     return true;
 }
 
+void CancelAsync() {
+    if (getting) {
+        warn("already getting records, canceling...");
+        cancel = true;
+    }
+
+    while (getting) {
+        // warn("still getting...");
+        yield();
+    }
+}
+
 bool CheckJsonType(Json::Value@ value, Json::Type desired, const string &in name) {
     if (value is null) {
         warn(name + " is null");
@@ -49,6 +61,7 @@ void GetTimestampsAsync() {
     }
 
     if (getting) {
+        // warn("already getting");
         return;
     }
 
@@ -89,45 +102,73 @@ void GetTimestampsAsync() {
 
     if (!surround) {
         GetRegionsTopAsync();
-        if (!InMap()) {
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
             getting = false;
             return;
         }
     }
 
     GetRegionsSurroundAsync();
-    if (!InMap()) {
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
         getting = false;
         return;
     }
 
     GetPlayerClubInfoAsync();
-    if (!InMap()) {
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
         getting = false;
         return;
     }
 
     GetClubSurroundAsync();
-    if (!InMap()) {
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
         getting = false;
         return;
     }
 
     if (!surround) {
         GetClubTopAsync();
-        if (!InMap()) {
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
             getting = false;
             return;
         }
 
         GetClubVIPsAsync();
-        if (!InMap()) {
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
             getting = false;
             return;
         }
 
         GetPlayerVIPsAsync();
-        if (!InMap()) {
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
             getting = false;
             return;
         }
@@ -138,6 +179,11 @@ void GetTimestampsAsync() {
     }
 
     GetRecordsAsync();
+    if (cancel) {
+        cancel = false;
+        getting = false;
+        return;
+    }
 
     trace(funcName + ": success");
     getting = false;

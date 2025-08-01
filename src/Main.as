@@ -6,6 +6,7 @@ dictionary   accountsByName;
 string[]     accountsQueue;
 const string audienceCore            = "NadeoServices";
 const string audienceLive            = "NadeoLiveServices";
+bool         cancel                  = false;
 bool         canViewRecords          = false;
 bool         getting                 = false;
 bool         hasClubVip              = false;
@@ -189,6 +190,7 @@ void Main() {
                     );
             }
 
+            CancelAsync();
             GetTimestampsAsync();
         }
 
@@ -198,6 +200,7 @@ void Main() {
 
             if (isDisplayRecords && !enteredMap && !gotNewPb) {
                 trace("leaderboard refreshed");
+                CancelAsync();
                 startnew(GetTimestampsAsync);
             }
         }
