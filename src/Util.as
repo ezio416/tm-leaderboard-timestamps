@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-05
+// m 2025-08-01
 
 bool AlwaysDisplayRecords() {
     auto App = cast<CTrackMania>(GetApp());
@@ -40,6 +40,107 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     if (minutes > 0)
         return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m" + (!S_RecencyLargest ? " " + seconds + "s" : "");
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
+}
+
+void GetTimestampsAsync() {
+    const bool surround = onlySurround;
+    if (surround) {
+        onlySurround = false;
+    }
+
+    if (getting) {
+        return;
+    }
+
+    const string funcName = "GetTimestampsAsync";
+    trace(funcName + ": starting");
+    getting = true;
+
+    if (!surround) {
+        Reset();
+    }
+
+    if (!InMap()) {
+        getting = false;
+        pb = 0;
+        return;
+    }
+
+    auto App = cast<CTrackMania>(GetApp());
+
+    const string mapType = string(App.RootMap.MapType);
+    if (false
+        or mapType.Contains("TM_Platform")
+        or mapType.Contains("TM_Royal")
+    ) {
+        warn(funcName + ": bad map type (" + mapType + ")");
+        getting = false;
+        return;
+    }
+
+    mapUid = App.RootMap.EdChallengeId;
+
+    while (!NadeoServices::IsAuthenticated(audienceLive)) {
+        yield();
+    }
+
+    // if (medalGhosts.GetSize() == 0)
+    //     GetMedalGhostsAsync();  // problem if a top record is a medal ghost, todo later
+
+    if (!surround) {
+        GetRegionsTopAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
+    }
+
+    GetRegionsSurroundAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
+    GetPlayerClubInfoAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
+    GetClubSurroundAsync();
+    if (!InMap()) {
+        getting = false;
+        return;
+    }
+
+    if (!surround) {
+        GetClubTopAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
+
+        GetClubVIPsAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
+
+        GetPlayerVIPsAsync();
+        if (!InMap()) {
+            getting = false;
+            return;
+        }
+    }
+
+    while (!NadeoServices::IsAuthenticated(audienceCore)) {
+        yield();
+    }
+
+    GetRecordsAsync();
+
+    trace(funcName + ": success");
+    getting = false;
 }
 
 uint GetPersonalBest() {
@@ -121,6 +222,40 @@ bool JsonIsArray(Json::Value@ value, const string &in name) {
 
 bool JsonIsObject(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Object, name);
+}
+
+void Reset() {
+    // accountsById.DeleteAll();  // don't delete all now that we support medals
+    // accountsByName.DeleteAll();
+    accountsQueue   = {};
+    hasClubVip      = false;
+    hasPlayerVip    = false;
+    // lastUid         = "";
+    mapUid          = "";
+    newLocalPb      = false;
+    // pb              = 0;
+    pinnedClub      = 0;
+    raceRecordIndex = -1;
+
+    string[]@ ids = accountsById.GetKeys();
+    string id;
+    for (uint i = 0; i < ids.Length; i++) {
+        id = ids[i];
+
+        auto account = cast<Account>(accountsById[id]);
+        if (account is null) {
+            accountsById.Delete(id);
+            continue;
+        }
+
+        if (!account.name.StartsWith("\u0092")) {
+            accountsById.Delete(id);
+
+            if (accountsByName.Exists(account.name)) {
+                accountsByName.Delete(account.name);
+            }
+        }
+    }
 }
 
 // prevents some crashes
