@@ -26,6 +26,8 @@ const float  scale           = UI::GetScale();
 const float  stdRatio        = 16.0f / 9.0f;
 uint         surroundScore   = 0;
 const string title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
+uint         valueOverlayConfirmQuit = 0;
+uint         valueOverlaySettings    = 0;
 const uint64 waitTime        = 500;
 
 class Account {
@@ -269,6 +271,51 @@ void Render() {
 
     if (CMAP is null || CMAP.UILayers.Length == 0)
         return;
+
+    for (int i = App.Viewport.Overlays.Length - 1; i >= 0; i--) {
+        CHmsZoneOverlay@ Overlay = App.Viewport.Overlays[i];
+        if (false
+            or Overlay is null
+            or Overlay.m_CorpusVisibles.Length == 0
+            or Overlay.m_CorpusVisibles[0] is null
+            or Overlay.m_CorpusVisibles[0].Item is null
+            or Overlay.m_CorpusVisibles[0].Item.SceneMobil is null
+        ) {
+            continue;
+        }
+
+        if (false
+            or (true
+                and valueOverlayConfirmQuit > 0
+                and valueOverlayConfirmQuit == Overlay.m_CorpusVisibles[0].Item.SceneMobil.Id.Value
+            )
+            or (true
+                and valueOverlaySettings > 0
+                and valueOverlaySettings == Overlay.m_CorpusVisibles[0].Item.SceneMobil.Id.Value
+                and Overlay.m_CorpusVisibles.Length > 300
+                and Overlay.m_CorpusVisibles[0].Item.IsVisible
+            )
+        ) {
+            return;
+        }
+
+        if (Overlay.m_CorpusVisibles[0].Item.SceneMobil.IdName == "FrameConfirmQuit") {
+            valueOverlayConfirmQuit = Overlay.m_CorpusVisibles[0].Item.SceneMobil.Id.Value;
+            return;
+        }
+
+        if (Overlay.m_CorpusVisibles[0].Item.SceneMobil.IdName == "InterfaceRoot") {
+            auto Mobil = cast<CControlFrameStyled>(Overlay.m_CorpusVisibles[0].Item.SceneMobil);
+            if (true
+                and Mobil !is null
+                and Mobil.Childs.Length > 0
+                and Mobil.Childs[0] !is null
+                and Mobil.Childs[0].IdName == "FrameManialinkPageContainer"
+            ) {
+                valueOverlaySettings = Mobil.Id.Value;
+            }
+        }
+    }
 
     CGameManialinkPage@ RecordsTable;
 
