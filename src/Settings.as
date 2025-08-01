@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-05
+// m 2025-06-01
 
 [Setting hidden] bool   S_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
@@ -123,6 +123,7 @@ void Settings_Debug() {
     UI::Text("getting data: " + getting);
     UI::Text("new local PB: " + newLocalPb);
     UI::Text("surround score: " + Time::Format(surroundScore));
+    UI::Text("pb: " + Time::Format(pb));
     UI::Text("medal ghosts: " + medalGhosts.GetSize());
 
     UI::BeginDisabled(getting);

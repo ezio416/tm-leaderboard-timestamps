@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-05-06
+// m 2025-06-08
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -10,6 +10,7 @@ bool         canViewRecords  = false;
 bool         getting         = false;
 bool         hasClubVip      = false;
 bool         hasPlayerVip    = false;
+string       lastUid;
 const string legacyLoadText  = "\\$AAAloading...";
 string       mapUid;
 dictionary@  medalGhosts     = dictionary();
@@ -121,6 +122,19 @@ void Main() {
 
         bool enteredMap = false;
 
+        if (inMap) {
+            auto Map = GetApp().RootMap;
+            if (Map !is null) {
+                mapUid = Map.EdChallengeId;
+                if (lastUid != mapUid) {
+                    lastUid = mapUid;
+                    Reset();
+                    continue;
+                    // enteredMap = true;
+                }
+            }
+        }
+
         if (wasInMap != inMap) {
             wasInMap = inMap;
 
@@ -154,6 +168,8 @@ void Main() {
             const uint oldPb = pb != 0 ? pb : uint(-1);
             pb = newPb;
             gotNewPb = true;
+
+            print("pb: " + Time::Format(pb) + ", oldPb: " + Time::Format(oldPb) + ", newPb: " + Time::Format(newPb));
 
             if (oldPb == uint(-1))
                 trace("new pb found (" + Time::Format(newPb) + ")");
@@ -330,6 +346,7 @@ void GetTimestampsAsync() {
 
     if (!InMap()) {
         getting = false;
+        pb = 0;
         return;
     }
 
@@ -543,8 +560,10 @@ void Reset() {
     accountsQueue   = {};
     hasClubVip      = false;
     hasPlayerVip    = false;
+    // lastUid         = "";
     mapUid          = "";
     newLocalPb      = false;
+    // pb              = 0;
     pinnedClub      = 0;
     raceRecordIndex = -1;
 
