@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-06-08
+// m 2025-08-01
 
 dictionary@  accountsById    = dictionary();
 dictionary@  accountsByName  = dictionary();
@@ -427,6 +427,10 @@ void GetTimestampsAsync() {
 
 void RenderAll(CGameManialinkPage@ RecordsTable) {
     if (!S_Timestamp && !S_Recency)
+        return;
+
+    auto GlobalFrame = cast<CGameManialinkFrame>(RecordsTable.GetFirstChild("frame-global"));
+    if (GlobalFrame is null || !GlobalFrame.Visible)
         return;
 
     auto RankingFrame = cast<CGameManialinkFrame>(RecordsTable.GetFirstChild("frame-ranking"));
