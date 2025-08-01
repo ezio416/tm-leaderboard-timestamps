@@ -263,7 +263,13 @@ string TimeFormatString(const string&in format, const int64 stamp = -1) {
 }
 
 string UnixToIso(uint timestamp) {
-    return TimeFormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
+    return TimeFormatString(
+        S_Legacy
+            ? Text::OpenplanetFormatCodes(S_TimestampFormat)
+            : Text::StripFormatCodes(S_TimestampFormat)
+        ,
+        timestamp
+    );
 }
 
 // prevents most crashes
