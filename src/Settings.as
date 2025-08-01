@@ -35,6 +35,7 @@ void Settings_General() {
     S_Warning = UI::Checkbox("Warn when a record is driven but won't upload right away", S_Warning);
     HoverTooltipSetting(
         "Records only upload if you have author medal, get a new medal, or exit the map."
+        " This option is a little buggy so be warned. Should be fixed in a future update."
     );
 
     if (!S_Legacy) {
