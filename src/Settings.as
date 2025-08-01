@@ -104,6 +104,8 @@ void Settings_General() {
 
 [SettingsTab name="Debug" icon="Bug" order=1]
 void Settings_Debug() {
+    const float scale = UI::GetScale();
+
     if (mapUid.Length > 0) {
         if (UI::Selectable("map UID: " + mapUid, false))
             OpenBrowserURL("https://trackmania.io/#/leaderboard/" + mapUid);

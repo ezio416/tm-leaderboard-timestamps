@@ -22,7 +22,6 @@ uint         pinnedClub      = 0;
 string       playerId;
 string       playerName;
 int          raceRecordIndex = -1;
-const float  scale           = UI::GetScale();
 const float  stdRatio        = 16.0f / 9.0f;
 uint         surroundScore   = 0;
 const string title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
