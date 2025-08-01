@@ -1,33 +1,34 @@
 // c 2024-06-21
 // m 2025-08-01
 
-dictionary@  accountsById    = dictionary();
-dictionary@  accountsByName  = dictionary();
+dictionary   accountsById;
+dictionary   accountsByName;
 string[]     accountsQueue;
-const string audienceCore    = "NadeoServices";
-const string audienceLive    = "NadeoLiveServices";
-bool         canViewRecords  = false;
-bool         getting         = false;
-bool         hasClubVip      = false;
-bool         hasPlayerVip    = false;
+const string audienceCore            = "NadeoServices";
+const string audienceLive            = "NadeoLiveServices";
+bool         canViewRecords          = false;
+bool         getting                 = false;
+bool         hasClubVip              = false;
+bool         hasPlayerVip            = false;
 string       lastUid;
-const string legacyLoadText  = "\\$AAAloading...";
+const string legacyLoadText          = "\\$AAAloading...";
 string       mapUid;
-dictionary@  medalGhosts     = dictionary();
-bool         menuOpen        = false;
-bool         newLocalPb      = false;
-bool         onlySurround    = false;
-uint         pb              = 0;
-uint         pinnedClub      = 0;
+dictionary   medalGhosts;
+bool         menuOpen                = false;
+bool         newLocalPb              = false;
+bool         onlySurround            = false;
+uint         pb                      = 0;
+uint         pinnedClub              = 0;
 string       playerId;
 string       playerName;
-int          raceRecordIndex = -1;
-const float  stdRatio        = 16.0f / 9.0f;
-uint         surroundScore   = 0;
-const string title           = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
+int          raceRecordIndex         = -1;
+const float  stdRatio                = 16.0f / 9.0f;
+uint         surroundScore           = 0;
+bool         timeFormatValid         = false;
+const string title                   = "\\$0AF" + Icons::ListOl + "\\$G Leaderboard Timestamps";
 uint         valueOverlayConfirmQuit = 0;
 uint         valueOverlaySettings    = 0;
-const uint64 waitTime        = 500;
+const uint64 waitTime                = 500;
 
 void Main() {
     canViewRecords = Permissions::ViewRecords();
@@ -42,7 +43,7 @@ void Main() {
     bool wasDisplayRecords = false;
     bool wasInMap          = false;
 
-    ChangeFont();
+    OnSettingsChanged();
 
     auto App = cast<CTrackMania>(GetApp());
 
@@ -215,10 +216,9 @@ void Main() {
 }
 
 void OnSettingsChanged() {
-    if (S_FontSize < 6)
-        S_FontSize = 6;
-    if (S_FontSize > 72)
-        S_FontSize = 72;
+    S_FontSize = Math::Clamp(S_FontSize, 6, 72);
+
+    timeFormatValid = VerifyTimeFormat();
 
     ChangeFont();
 }

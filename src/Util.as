@@ -258,14 +258,31 @@ void Reset() {
     }
 }
 
-// prevents some crashes
-string TimeFormatString(const string &in format, int64 stamp = -1) {
-    if (format.Contains("% ") || format.Trim().EndsWith("%"))
-        return "ERROR";
-
-    return Time::FormatString(format, stamp);
+string TimeFormatString(const string&in format, const int64 stamp = -1) {
+    return timeFormatValid ? Time::FormatString(format, stamp) : "FORMAT ERROR";
 }
 
 string UnixToIso(uint timestamp) {
     return TimeFormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
+}
+
+// prevents most crashes
+bool VerifyTimeFormat() {
+    if (true
+        and S_TimestampFormat.EndsWith("%")
+        and !S_TimestampFormat.EndsWith("%%")
+    ) {
+        return false;
+    }
+
+    Regex::SearchAllResult@ results = Regex::SearchAll(S_TimestampFormat, "%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ]");
+    for (uint i = 0; i < results.Length; i++) {
+        for (uint j = 0; j < results[i].Length; j++) {
+            if (!results[i][j].Contains("%%")) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }

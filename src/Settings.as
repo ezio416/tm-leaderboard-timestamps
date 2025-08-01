@@ -71,8 +71,12 @@ void Settings_General() {
             S_TimestampOffsetY = UI::InputFloat("Offset Y##ts", S_TimestampOffsetY);
         }
 
-        S_TimestampFormat = UI::InputText("Format", S_TimestampFormat);
+        bool changed;
+        S_TimestampFormat = UI::InputText("Format", S_TimestampFormat, changed);
         HoverTooltipSetting("Uses strftime" + (S_Legacy ? " and supports Maniaplanet-style formatting\n(any \"$\" symbol will be used for this)" : ""));
+        if (changed) {
+            OnSettingsChanged();
+        }
 
         UI::Text("Preview: " + UnixToIso(Time::Stamp));
 
