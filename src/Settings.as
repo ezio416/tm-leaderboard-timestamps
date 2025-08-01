@@ -77,7 +77,7 @@ void Settings_General() {
         UI::Text("Preview: " + UnixToIso(Time::Stamp));
 
         if (UI::Button(Icons::ExternalLink + " Time formatting"))
-            OpenBrowserURL("https://www.ibm.com/docs/en/workload-automation/10.2.0?topic=troubleshooting-date-time-format-reference-strftime");
+            OpenBrowserURL("https://cplusplus.com/reference/ctime/strftime/");
         HoverTooltip("Open in browser");
 
         if (S_Legacy) {
