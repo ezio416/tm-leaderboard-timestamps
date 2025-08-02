@@ -7,7 +7,7 @@ string[]     accountsQueue;
 const string audienceCore            = "NadeoServices";
 const string audienceLive            = "NadeoLiveServices";
 bool         cancel                  = false;
-bool         canViewRecords          = false;
+const bool   canViewRecords          = Permissions::ViewRecords();
 bool         getting                 = false;
 bool         hasClubVip              = false;
 bool         hasPlayerVip            = false;
@@ -33,7 +33,6 @@ uint         valueOverlaySettings    = 0;
 const uint64 waitTime                = 500;
 
 void Main() {
-    canViewRecords = Permissions::ViewRecords();
     if (!canViewRecords)
         return;
 
