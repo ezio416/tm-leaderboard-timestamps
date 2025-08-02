@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-08-01
+// m 2025-08-02
 
 Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
     sleep(waitTime);
@@ -107,6 +107,10 @@ Net::HttpRequest@ GetLiveAsync(const string &in endpoint) {
 }
 
 string GetMapIdAsync() {
+    if (mapIds.Exists(mapUid)) {
+        return string(mapIds[mapUid]);
+    }
+
     const string funcName = "GetMapIdAsync";
     trace(funcName + ": starting");
 
@@ -142,6 +146,7 @@ string GetMapIdAsync() {
     }
 
     const string mapId = string(map["mapId"]);
+    mapIds[mapUid] = mapId;
 
     // trace(funcName + ": success");
 

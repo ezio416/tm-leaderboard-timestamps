@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-08-01
+// m 2025-08-02
 
 [Setting hidden] bool   S_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
@@ -127,6 +127,7 @@ void Settings_Debug() {
 
     UI::Text("accountsQueue: " + accountsQueue.Length);
     UI::Text("total accounts: " + accountsById.GetSize());
+    UI::Text("total map IDs: " + mapIds.GetSize());
     UI::Text("getting data: " + getting);
     UI::Text("cancel: " + cancel);
     UI::Text("new local PB: " + newLocalPb);

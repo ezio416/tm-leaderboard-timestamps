@@ -1,5 +1,5 @@
 // c 2024-06-21
-// m 2025-08-01
+// m 2025-08-02
 
 dictionary   accountsById;
 dictionary   accountsByName;
@@ -13,6 +13,7 @@ bool         hasClubVip              = false;
 bool         hasPlayerVip            = false;
 string       lastUid;
 const string legacyLoadText          = "\\$AAAloading...";
+dictionary   mapIds;
 string       mapUid;
 dictionary   medalGhosts;
 bool         menuOpen                = false;
