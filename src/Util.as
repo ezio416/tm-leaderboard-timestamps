@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-08-01
+// m 2025-08-02
 
 bool AlwaysDisplayRecords() {
     auto App = cast<CTrackMania>(GetApp());
@@ -322,21 +322,5 @@ string UnixToIso(uint timestamp) {
 
 // prevents most crashes
 bool VerifyTimeFormat() {
-    if (true
-        and S_TimestampFormat.EndsWith("%")
-        and !S_TimestampFormat.EndsWith("%%")
-    ) {
-        return false;
-    }
-
-    Regex::SearchAllResult@ results = Regex::SearchAll(S_TimestampFormat, "%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ]");
-    for (uint i = 0; i < results.Length; i++) {
-        for (uint j = 0; j < results[i].Length; j++) {
-            if (!results[i][j].Contains("%%")) {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    return !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)");
 }
