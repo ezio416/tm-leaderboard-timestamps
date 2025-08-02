@@ -36,6 +36,8 @@ void Main() {
     if (!canViewRecords)
         return;
 
+    OnEnabled();
+
     NadeoServices::AddAudience(audienceCore);
     NadeoServices::AddAudience(audienceLive);
 
@@ -216,6 +218,18 @@ void Main() {
             accountsQueue.RemoveAt(0);
         }
     }
+}
+
+void OnDestroyed() {
+    OnDisabled();
+}
+
+void OnDisabled() {
+    Intercept::Stop();
+}
+
+void OnEnabled() {
+    Intercept::Start();
 }
 
 void OnSettingsChanged() {
