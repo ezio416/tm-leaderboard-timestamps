@@ -255,11 +255,13 @@ void HoverTooltip(const string &in msg) {
 }
 
 bool InMap() {
-    auto App = cast<CTrackMania>(GetApp());
+    CGameCtnApp@ App = GetApp();
 
-    return App.RootMap !is null
-        && App.CurrentPlayground !is null
-        && App.Editor is null;
+    return true
+        and App.RootMap !is null
+        and App.Editor is null
+        and cast<CSmArenaClient>(App.CurrentPlayground) !is null
+    ;
 }
 
 bool JsonIsArray(Json::Value@ value, const string &in name) {
