@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-05
+// m 2025-08-02
 
 [Setting hidden] bool   S_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
@@ -35,6 +35,7 @@ void Settings_General() {
     S_Warning = UI::Checkbox("Warn when a record is driven but won't upload right away", S_Warning);
     HoverTooltipSetting(
         "Records only upload if you have author medal, get a new medal, or exit the map."
+        " This option is a little buggy so be warned. Should be fixed in a future update."
     );
 
     if (!S_Legacy) {
@@ -70,13 +71,17 @@ void Settings_General() {
             S_TimestampOffsetY = UI::InputFloat("Offset Y##ts", S_TimestampOffsetY);
         }
 
-        S_TimestampFormat = UI::InputText("Format", S_TimestampFormat);
+        bool changed;
+        S_TimestampFormat = UI::InputText("Format", S_TimestampFormat, changed);
         HoverTooltipSetting("Uses strftime" + (S_Legacy ? " and supports Maniaplanet-style formatting\n(any \"$\" symbol will be used for this)" : ""));
+        if (changed) {
+            OnSettingsChanged();
+        }
 
         UI::Text("Preview: " + UnixToIso(Time::Stamp));
 
         if (UI::Button(Icons::ExternalLink + " Time formatting"))
-            OpenBrowserURL("https://www.ibm.com/docs/en/workload-automation/10.2.0?topic=troubleshooting-date-time-format-reference-strftime");
+            OpenBrowserURL("https://cplusplus.com/reference/ctime/strftime/");
         HoverTooltip("Open in browser");
 
         if (S_Legacy) {
@@ -104,6 +109,8 @@ void Settings_General() {
 
 [SettingsTab name="Debug" icon="Bug" order=1]
 void Settings_Debug() {
+    const float scale = UI::GetScale();
+
     if (mapUid.Length > 0) {
         if (UI::Selectable("map UID: " + mapUid, false))
             OpenBrowserURL("https://trackmania.io/#/leaderboard/" + mapUid);
@@ -120,10 +127,15 @@ void Settings_Debug() {
 
     UI::Text("accountsQueue: " + accountsQueue.Length);
     UI::Text("total accounts: " + accountsById.GetSize());
+    UI::Text("total map IDs: " + mapIds.GetSize());
     UI::Text("getting data: " + getting);
+    UI::Text("cancel: " + cancel);
     UI::Text("new local PB: " + newLocalPb);
     UI::Text("surround score: " + Time::Format(surroundScore));
+    UI::Text("pb: " + Time::Format(pb));
     UI::Text("medal ghosts: " + medalGhosts.GetSize());
+    UI::Text("valueOverlayConfirmQuit: " + valueOverlayConfirmQuit);
+    UI::Text("valueOverlaySettings: " + valueOverlaySettings);
 
     UI::BeginDisabled(getting);
     if (UI::Button(Icons::Refresh + " Force refresh"))

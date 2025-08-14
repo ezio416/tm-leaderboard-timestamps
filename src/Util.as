@@ -1,5 +1,5 @@
 // c 2024-06-24
-// m 2025-05-05
+// m 2025-08-02
 
 bool AlwaysDisplayRecords() {
     auto App = cast<CTrackMania>(GetApp());
@@ -8,6 +8,18 @@ bool AlwaysDisplayRecords() {
         return false;
 
     return true;
+}
+
+void CancelAsync() {
+    if (getting) {
+        warn("already getting records, canceling...");
+        cancel = true;
+    }
+
+    while (getting) {
+        // warn("still getting...");
+        yield();
+    }
 }
 
 bool CheckJsonType(Json::Value@ value, Json::Type desired, const string &in name) {
@@ -40,6 +52,141 @@ string FormatSeconds(int seconds, bool day = false, bool hour = false, bool minu
     if (minutes > 0)
         return (day ? "0d " : "") + (hour ? "0h " : "") + minutes + "m" + (!S_RecencyLargest ? " " + seconds + "s" : "");
     return (day ? "0d " : "") + (hour ? "0h " : "") + (minute ? "0m " : "") + seconds + "s";
+}
+
+void GetTimestampsAsync() {
+    const bool surround = onlySurround;
+    if (surround) {
+        onlySurround = false;
+    }
+
+    if (getting) {
+        // warn("already getting");
+        return;
+    }
+
+    const string funcName = "GetTimestampsAsync";
+    trace(funcName + ": starting");
+    getting = true;
+
+    if (!surround) {
+        Reset();
+    }
+
+    if (!InMap()) {
+        getting = false;
+        pb = 0;
+        return;
+    }
+
+    auto App = cast<CTrackMania>(GetApp());
+
+    const string mapType = string(App.RootMap.MapType);
+    if (false
+        or mapType.Contains("TM_Platform")
+        or mapType.Contains("TM_Royal")
+    ) {
+        warn(funcName + ": bad map type (" + mapType + ")");
+        getting = false;
+        return;
+    }
+
+    mapUid = App.RootMap.EdChallengeId;
+
+    while (!NadeoServices::IsAuthenticated(audienceLive)) {
+        yield();
+    }
+
+    // if (medalGhosts.GetSize() == 0)
+    //     GetMedalGhostsAsync();  // problem if a top record is a medal ghost, todo later
+
+    if (!surround) {
+        GetRegionsTopAsync();
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
+            getting = false;
+            return;
+        }
+    }
+
+    GetRegionsSurroundAsync();
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
+        getting = false;
+        return;
+    }
+
+    GetPlayerClubInfoAsync();
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
+        getting = false;
+        return;
+    }
+
+    GetClubSurroundAsync();
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
+        getting = false;
+        return;
+    }
+
+    if (!surround) {
+        GetClubTopAsync();
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
+            getting = false;
+            return;
+        }
+
+        GetClubVIPsAsync();
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
+            getting = false;
+            return;
+        }
+
+        GetPlayerVIPsAsync();
+        if (false
+            or cancel
+            or !InMap()
+        ) {
+            cancel = false;
+            getting = false;
+            return;
+        }
+    }
+
+    while (!NadeoServices::IsAuthenticated(audienceCore)) {
+        yield();
+    }
+
+    GetRecordsAsync();
+    if (cancel) {
+        cancel = false;
+        getting = false;
+        return;
+    }
+
+    trace(funcName + ": success");
+    getting = false;
 }
 
 uint GetPersonalBest() {
@@ -108,11 +255,13 @@ void HoverTooltip(const string &in msg) {
 }
 
 bool InMap() {
-    auto App = cast<CTrackMania>(GetApp());
+    CGameCtnApp@ App = GetApp();
 
-    return App.RootMap !is null
-        && App.CurrentPlayground !is null
-        && App.Editor is null;
+    return true
+        and App.RootMap !is null
+        and App.Editor is null
+        and cast<CSmArenaClient>(App.CurrentPlayground) !is null
+    ;
 }
 
 bool JsonIsArray(Json::Value@ value, const string &in name) {
@@ -123,14 +272,55 @@ bool JsonIsObject(Json::Value@ value, const string &in name) {
     return CheckJsonType(value, Json::Type::Object, name);
 }
 
-// prevents some crashes
-string TimeFormatString(const string &in format, int64 stamp = -1) {
-    if (format.Contains("% ") || format.Trim().EndsWith("%"))
-        return "ERROR";
+void Reset() {
+    // accountsById.DeleteAll();  // don't delete all now that we support medals
+    // accountsByName.DeleteAll();
+    accountsQueue   = {};
+    hasClubVip      = false;
+    hasPlayerVip    = false;
+    // lastUid         = "";
+    mapUid          = "";
+    newLocalPb      = false;
+    // pb              = 0;
+    pinnedClub      = 0;
+    raceRecordIndex = -1;
 
-    return Time::FormatString(format, stamp);
+    string[]@ ids = accountsById.GetKeys();
+    string id;
+    for (uint i = 0; i < ids.Length; i++) {
+        id = ids[i];
+
+        auto account = cast<Account>(accountsById[id]);
+        if (account is null) {
+            accountsById.Delete(id);
+            continue;
+        }
+
+        if (!account.name.StartsWith("\u0092")) {
+            accountsById.Delete(id);
+
+            if (accountsByName.Exists(account.name)) {
+                accountsByName.Delete(account.name);
+            }
+        }
+    }
+}
+
+string TimeFormatString(const string&in format, const int64 stamp = -1) {
+    return timeFormatValid ? Time::FormatString(format, stamp) : "FORMAT ERROR";
 }
 
 string UnixToIso(uint timestamp) {
-    return TimeFormatString(S_TimestampFormat.Replace("$", "\\$"), timestamp);
+    return TimeFormatString(
+        S_Legacy
+            ? Text::OpenplanetFormatCodes(S_TimestampFormat)
+            : Text::StripFormatCodes(S_TimestampFormat)
+        ,
+        timestamp
+    );
+}
+
+// prevents most crashes
+bool VerifyTimeFormat() {
+    return !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)");
 }
