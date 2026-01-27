@@ -157,7 +157,7 @@ void Settings_Debug() {
         UI::TableSetupColumn("name");
         UI::TableSetupColumn("time",           UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (epoch)",     UI::TableColumnFlags::WidthFixed, scale * 80.0f);
-        UI::TableSetupColumn("ts (formatted)", UI::TableColumnFlags::WidthFixed, Draw::MeasureString(UnixToIso(1727265600)).x);
+        UI::TableSetupColumn("ts (formatted)", UI::TableColumnFlags::WidthFixed, UI::MeasureString(UnixToIso(1727265600)).x);
         UI::TableSetupColumn("recency",        UI::TableColumnFlags::WidthFixed, scale * 100.0f);
         UI::TableHeadersRow();
 
@@ -213,7 +213,7 @@ void HoverTooltipSetting(const string&in msg) {
         return;
     }
 
-    UI::SetNextWindowSize(int(Math::Min(Draw::MeasureString(msg).x, 400.0f)), 0.0f);
+    UI::SetNextWindowSize(int(Math::Min(UI::MeasureString(msg).x, 400.0f)), 0.0f);
     UI::BeginTooltip();
     UI::TextWrapped(msg);
     UI::EndTooltip();

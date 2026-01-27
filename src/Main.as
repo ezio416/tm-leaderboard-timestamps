@@ -49,7 +49,7 @@ void Main() {
     playerName = App.LocalPlayerInfo.Name;
 
     if (!S_InitV2) {
-        switch(int(Draw::GetHeight())) {
+        switch(int(Display::GetHeight())) {
             case 720:
                 S_FontSize         = 6;
                 S_TimestampOffsetX = 96.0f;

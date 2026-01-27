@@ -148,8 +148,8 @@ void RenderRanking(CGameManialinkControl@ control) {
         @account = cast<Account>(accountsByName[name]);
     }
 
-    const float w       = Math::Max(1, Draw::GetWidth());
-    const float h       = Math::Max(1, Draw::GetHeight());
+    const float w       = Math::Max(1, Display::GetWidth());
+    const float h       = Math::Max(1, Display::GetHeight());
     const vec2  center  = vec2(w * 0.5f, h * 0.5f);
     const float unit    = (w / h < stdRatio) ? w / 320.0f : h / 180.0f;
     const vec2  scale   = vec2(unit, -unit);
