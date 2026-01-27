@@ -30,8 +30,9 @@ uint         valueOverlaySettings    = 0;
 const uint64 waitTime                = 500;
 
 void Main() {
-    if (!canViewRecords)
+    if (!canViewRecords) {
         return;
+    }
 
     NadeoServices::AddAudience(audienceCore);
     NadeoServices::AddAudience(audienceLive);
