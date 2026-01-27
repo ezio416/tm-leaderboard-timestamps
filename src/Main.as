@@ -142,7 +142,10 @@ void Main() {
         bool gotNewPb = false;
 
         const uint newPb = GetPersonalBestAsync();
-        if (newPb > 0 && pb != newPb) {
+        if (true
+            and newPb > 0
+            and pb != newPb
+        ) {
             surroundScore = newPb;
 
             const uint oldPb = pb != 0 ? pb : uint(-1);
@@ -151,13 +154,14 @@ void Main() {
 
             trace("pb: " + Time::Format(pb) + ", oldPb: " + Time::Format(oldPb) + ", newPb: " + Time::Format(newPb));
 
-            if (oldPb == uint(-1))
+            if (oldPb == uint(-1)) {
                 trace("new pb found (" + Time::Format(newPb) + ")");
-            else
+            } else {
                 trace("new pb found (was " + Time::Format(oldPb)
                     + ", now " + Time::Format(newPb)
                     + ", diff of " + Time::Format(oldPb - newPb)
                 + ")");
+            }
 
             // if (accountsById.Exists(playerId)) {
             //     auto me = cast<Account>(accountsById[playerId]);
@@ -169,22 +173,32 @@ void Main() {
             //     warn("account not found: " + playerId);
 
             newLocalPb = !(false  // negating the logic of an uploaded record like this is simpler
-                || pb <= App.RootMap.TMObjective_AuthorTime
-                || (oldPb > App.RootMap.TMObjective_GoldTime   && pb <= App.RootMap.TMObjective_GoldTime)
-                || (oldPb > App.RootMap.TMObjective_SilverTime && pb <= App.RootMap.TMObjective_SilverTime)
-                || (oldPb > App.RootMap.TMObjective_BronzeTime && pb <= App.RootMap.TMObjective_BronzeTime)
+                or pb <= App.RootMap.TMObjective_AuthorTime
+                or (true
+                    and oldPb > App.RootMap.TMObjective_GoldTime
+                    and pb <= App.RootMap.TMObjective_GoldTime
+                )
+                or (true
+                    and oldPb > App.RootMap.TMObjective_SilverTime
+                    and pb <= App.RootMap.TMObjective_SilverTime
+                )
+                or (true
+                    and oldPb > App.RootMap.TMObjective_BronzeTime
+                    and pb <= App.RootMap.TMObjective_BronzeTime
+                )
             );
 
             if (newLocalPb) {
                 warn("new local pb driven that won't upload until the player exits the map");
                 onlySurround = true;
 
-                if (S_Warning)
+                if (S_Warning) {
                     UI::ShowNotification(
                         title,
                         "New PB of " + Time::Format(pb) + " won't upload until you exit the map. Try getting another medal!",
                         10000
                     );
+                }
             }
 
             CancelAsync();
@@ -195,7 +209,11 @@ void Main() {
         if (wasDisplayRecords != isDisplayRecords) {
             wasDisplayRecords = isDisplayRecords;
 
-            if (isDisplayRecords && !enteredMap && !gotNewPb) {
+            if (true
+                and isDisplayRecords
+                and !enteredMap
+                and !gotNewPb
+            ) {
                 trace("leaderboard refreshed");
                 CancelAsync();
                 startnew(GetTimestampsAsync);
@@ -225,31 +243,41 @@ void OnSettingsChanged() {
 
 void Render() {
     if (false
-        || !S_Enabled
-        || !UI::IsGameUIVisible()
-        || (S_HideWithOP && !UI::IsOverlayShown())
-        || !canViewRecords
-        || !InMap()
-    )
+        or !S_Enabled
+        or !UI::IsGameUIVisible()
+        or (true
+            and S_HideWithOP
+            and !UI::IsOverlayShown()
+        )
+        or !canViewRecords
+        or !InMap()
+    ) {
         return;
+    }
 
     auto App = cast<CTrackMania>(GetApp());
 
-    if (App.Network.PlaygroundClientScriptAPI.IsInGameMenuDisplayed)
+    if (App.Network.PlaygroundClientScriptAPI.IsInGameMenuDisplayed) {
         return;
+    }
 
     const string mapType = string(App.RootMap.MapType);
     if (false
-        || mapType.Contains("TM_Platform")
-        || mapType.Contains("TM_Royal")
-    )
+        or mapType.Contains("TM_Platform")
+        or mapType.Contains("TM_Royal")
+    ) {
         return;
+    }
 
     auto Network = cast<CTrackManiaNetwork>(App.Network);
     CGameManiaAppPlayground@ CMAP = Network.ClientManiaAppPlayground;
 
-    if (CMAP is null || CMAP.UILayers.Length == 0)
+    if (false
+        or CMAP is null
+        or CMAP.UILayers.Length == 0
+    ) {
         return;
+    }
 
     for (int i = App.Viewport.Overlays.Length - 1; i >= 0; i--) {
         CHmsZoneOverlay@ Overlay = App.Viewport.Overlays[i];
@@ -298,17 +326,23 @@ void Render() {
 
     CGameManialinkPage@ RecordsTable;
 
-    if (raceRecordIndex > -1 && CMAP.UILayers.Length > uint(raceRecordIndex)) {
+    if (true
+        and raceRecordIndex > -1
+        and CMAP.UILayers.Length > uint(raceRecordIndex)
+    ) {
         CGameUILayer@ Layer = CMAP.UILayers[raceRecordIndex];
 
         if (true
-            && Layer !is null
-            && Layer.Type == CGameUILayer::EUILayerType::Normal
-            && Layer.ManialinkPageUtf8.Length > 0
+            and Layer !is null
+            and Layer.Type == CGameUILayer::EUILayerType::Normal
+            and Layer.ManialinkPageUtf8.Length > 0
         ) {
             const int start = Layer.ManialinkPageUtf8.IndexOf("<");
             const int end = Layer.ManialinkPageUtf8.IndexOf(">");
-            if (start > -1 && end > -1) {
+            if (true
+                and start > -1
+                and end > -1
+            ) {
                 if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_Record"))
                     @RecordsTable = Layer.LocalPage;
             }
@@ -320,16 +354,21 @@ void Render() {
             CGameUILayer@ Layer = CMAP.UILayers[i];
 
             if (false
-                || Layer is null
-                || Layer.Type != CGameUILayer::EUILayerType::Normal
-                || Layer.ManialinkPageUtf8.Length == 0
-            )
+                or Layer is null
+                or Layer.Type != CGameUILayer::EUILayerType::Normal
+                or Layer.ManialinkPageUtf8.Length == 0
+            ) {
                 continue;
+            }
 
             const int start = Layer.ManialinkPageUtf8.IndexOf("<");
             const int end = Layer.ManialinkPageUtf8.IndexOf(">");
-            if (start == -1 || end == -1)
+            if (false
+                or start == -1
+                or end == -1
+            ) {
                 continue;
+            }
 
             if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_Record")) {
                 @RecordsTable = Layer.LocalPage;
@@ -339,18 +378,24 @@ void Render() {
         }
     }
 
-    if (RecordsTable is null)
+    if (RecordsTable is null) {
         return;
+    }
 
-    if (S_Legacy)
+    if (S_Legacy) {
         RenderLegacy(RecordsTable);
-    else
+    } else {
         RenderAll(RecordsTable);
+    }
 }
 
 void RenderMenu() {
     menuOpen = true;
 
-    if (canViewRecords && UI::MenuItem(title, "", S_Enabled))
+    if (true
+        and canViewRecords
+        and UI::MenuItem(title, "", S_Enabled)
+    ) {
         S_Enabled = !S_Enabled;
+    }
 }

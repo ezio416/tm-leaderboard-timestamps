@@ -25,8 +25,9 @@ void ChangeFont() {
         case Font::OswaldBold:     f = nvg::LoadFont("Oswald-Bold.ttf");     break;
     }
 
-    if (f > -1)
+    if (f > -1) {
         font = f;
+    }
 
     currentFont = S_Font;
 }

@@ -21,8 +21,9 @@ void Settings_General() {
     if (UI::Button("Reset to default")) {
         Meta::PluginSetting@[]@ settings = Meta::ExecutingPlugin().GetSettings();
 
-        for (uint i = 0; i < settings.Length; i++)
+        for (uint i = 0; i < settings.Length; i++) {
             settings[i].Reset();
+        }
     }
 
     S_Enabled = UI::Checkbox("Enabled", S_Enabled);
@@ -52,8 +53,9 @@ void Settings_General() {
 
         const int fontSize = S_FontSize;
         S_FontSize = UI::InputInt("Font size", S_FontSize);
-        if (S_FontSize != fontSize)
+        if (S_FontSize != fontSize) {
             OnSettingsChanged();
+        }
 
         S_FontColor = UI::InputColor4("Font color", S_FontColor);
     }
@@ -77,14 +79,16 @@ void Settings_General() {
 
         UI::Text("Preview: " + UnixToIso(Time::Stamp));
 
-        if (UI::Button(Icons::ExternalLink + " Time formatting"))
+        if (UI::Button(Icons::ExternalLink + " Time formatting")) {
             OpenBrowserURL("https://cplusplus.com/reference/ctime/strftime/");
+        }
         HoverTooltip("Open in browser");
 
         if (S_Legacy) {
             UI::SameLine();
-            if (UI::Button(Icons::ExternalLink + " Color formatting"))
+            if (UI::Button(Icons::ExternalLink + " Color formatting")) {
                 OpenBrowserURL("https://doc.maniaplanet.com/client/text-formatting");
+            }
             HoverTooltip("Open in browser");
         }
     }
@@ -109,18 +113,22 @@ void Settings_Debug() {
     const float scale = UI::GetScale();
 
     if (mapUid.Length > 0) {
-        if (UI::Selectable("map UID: " + mapUid, false))
+        if (UI::Selectable("map UID: " + mapUid, false)) {
             OpenBrowserURL("https://trackmania.io/#/leaderboard/" + mapUid);
+        }
         HoverTooltip(Icons::ExternalLink + " Trackmania.io");
-    } else
+    } else {
         UI::Text("map UID: none");
+    }
 
     if (pinnedClub > 0) {
-        if (UI::Selectable("pinned club: " + pinnedClub, false))
+        if (UI::Selectable("pinned club: " + pinnedClub, false)) {
             OpenBrowserURL("https://trackmania.io/#/clubs/" + pinnedClub);
+        }
         HoverTooltip(Icons::ExternalLink + " Trackmania.io");
-    } else
+    } else {
         UI::Text("pinned club: none");
+    }
 
     UI::Text("accountsQueue: " + accountsQueue.Length);
     UI::Text("total accounts: " + accountsById.GetSize());
@@ -135,8 +143,9 @@ void Settings_Debug() {
     UI::Text("valueOverlaySettings: " + valueOverlaySettings);
 
     UI::BeginDisabled(getting);
-    if (UI::Button(Icons::Refresh + " Force refresh"))
+    if (UI::Button(Icons::Refresh + " Force refresh")) {
         startnew(GetTimestampsAsync);
+    }
     UI::EndDisabled();
     HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 
@@ -170,8 +179,9 @@ void Settings_Debug() {
                 UI::TableNextRow();
 
                 UI::TableNextColumn();
-                if (UI::Selectable(account.id, false, UI::SelectableFlags::SpanAllColumns))
+                if (UI::Selectable(account.id, false, UI::SelectableFlags::SpanAllColumns)) {
                     OpenBrowserURL("https://trackmania.io/#/player/" + account.id);
+                }
                 HoverTooltip(Icons::ExternalLink + " Trackmania.io");
 
                 UI::TableNextColumn();
@@ -196,11 +206,12 @@ void Settings_Debug() {
     }
 }
 
-void HoverTooltipSetting(const string &in msg) {
+void HoverTooltipSetting(const string&in msg) {
     UI::SameLine();
     UI::Text("\\$666" + Icons::QuestionCircle);
-    if (!UI::IsItemHovered())
+    if (!UI::IsItemHovered()) {
         return;
+    }
 
     UI::SetNextWindowSize(int(Math::Min(Draw::MeasureString(msg).x, 400.0f)), 0.0f);
     UI::BeginTooltip();

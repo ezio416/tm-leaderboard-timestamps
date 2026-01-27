@@ -1,4 +1,4 @@
-Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint) {
+Net::HttpRequest@ GetAsync(const string&in audience, const string&in endpoint) {
     sleep(waitTime);
 
     Net::HttpRequest@ req = NadeoServices::Get(audience, endpoint);
@@ -18,9 +18,10 @@ Net::HttpRequest@ GetAsync(const string &in audience, const string &in endpoint)
     return req;
 }
 
-void GetClubAsync(const string &in funcName, const string &in endpoint) {
-    if (pinnedClub == 0)
+void GetClubAsync(const string&in funcName, const string&in endpoint) {
+    if (pinnedClub == 0) {
         return;
+    }
 
     trace(funcName + ": starting");
 
@@ -37,9 +38,12 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
         return;
+    }
 
     if (!parsed.HasKey("top")) {
         warn(funcName + ": parsed missing key 'top'");
@@ -47,8 +51,9 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ top = parsed["top"];
-    if (!JsonIsArray(top, funcName + ": top"))
+    if (!JsonIsArray(top, funcName + ": top")) {
         return;
+    }
 
     if (top.Length == 0) {
         warn(funcName + ": top is empty");
@@ -57,8 +62,9 @@ void GetClubAsync(const string &in funcName, const string &in endpoint) {
 
     for (uint i = 0; i < top.Length; i++) {
         Json::Value@ record = top[i];
-        if (!JsonIsObject(record, funcName + ": record " + i))
+        if (!JsonIsObject(record, funcName + ": record " + i)) {
             continue;
+        }
 
         if (!record.HasKey("accountId")) {
             warn(funcName + ": record " + i + " missing key 'accountId'");
@@ -89,17 +95,21 @@ void GetClubTopAsync() {
 }
 
 void GetClubVIPsAsync() {
-    if (pinnedClub == 0 || !hasClubVip)
+    if (false
+        or pinnedClub == 0
+        or !hasClubVip
+    ) {
         return;
+    }
 
     GetVIPsAsync("GetClubVIPsAsync", "/api/token/club/" + pinnedClub + "/vip/map/" + mapUid + "?seasonUid=Personal_Best");
 }
 
-Net::HttpRequest@ GetCoreAsync(const string &in endpoint) {
+Net::HttpRequest@ GetCoreAsync(const string&in endpoint) {
     return GetAsync(audienceCore, NadeoServices::BaseURLCore() + endpoint);
 }
 
-Net::HttpRequest@ GetLiveAsync(const string &in endpoint) {
+Net::HttpRequest@ GetLiveAsync(const string&in endpoint) {
     return GetAsync(audienceLive, NadeoServices::BaseURLLive() + endpoint);
 }
 
@@ -124,9 +134,12 @@ string GetMapIdAsync() {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsArray(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsArray(parsed, funcName + ": parsed")) {
         return "";
+    }
 
     if (parsed.Length == 0) {
         warn(funcName + ": parsed is empty");
@@ -134,8 +147,9 @@ string GetMapIdAsync() {
     }
 
     Json::Value@ map = parsed[0];
-    if (!JsonIsObject(map, funcName + ": map"))
+    if (!JsonIsObject(map, funcName + ": map")) {
         return "";
+    }
 
     if (!map.HasKey("mapId")) {
         warn(funcName + ": map missing key 'mapId'");
@@ -167,9 +181,12 @@ void GetMedalGhostsAsync() {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
         return;
+    }
 
     if (!parsed.HasKey("medals")) {
         warn(funcName + ": parsed missing key 'medals'");
@@ -177,13 +194,15 @@ void GetMedalGhostsAsync() {
     }
 
     Json::Value@ medals = parsed.Get("medals");
-    if (!JsonIsArray(medals, funcName + ": medals"))
+    if (!JsonIsArray(medals, funcName + ": medals")) {
         return;
+    }
 
     for (uint i = 0; i < medals.Length; i++) {
         Json::Value@ medal = medals[i];
-        if (!JsonIsObject(medal, funcName + ": medal " + i))
+        if (!JsonIsObject(medal, funcName + ": medal " + i)) {
             continue;
+        }
 
         if (!medal.HasKey("medal")) {
             warn(funcName + ": medal " + i + " missing key 'medal'");
@@ -225,9 +244,12 @@ void GetPlayerClubInfoAsync() {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
         return;
+    }
 
     if (!parsed.HasKey("hasClubVip")) {
         warn(funcName + ": parsed missing key 'hasClubVip'");
@@ -254,8 +276,9 @@ void GetPlayerClubInfoAsync() {
 }
 
 void GetPlayerVIPsAsync() {
-    if (!hasPlayerVip)
+    if (!hasPlayerVip) {
         return;
+    }
 
     GetVIPsAsync("GetPlayerVIPsAsync", "/api/token/club/player-vip/map/" + mapUid + "?seasonUid=Personal_Best");
 }
@@ -272,8 +295,8 @@ void GetRecordsAsync() {
 
     auto App = cast<CTrackMania>(GetApp());
     const bool stunt = true
-        && App.RootMap !is null
-        && string(App.RootMap.MapType).Contains("TM_Stunt")
+        and App.RootMap !is null
+        and string(App.RootMap.MapType).Contains("TM_Stunt")
     ;
 
     // todo: account for many club VIPs
@@ -293,9 +316,12 @@ void GetRecordsAsync() {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsArray(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsArray(parsed, funcName + ": parsed")) {
         return;
+    }
 
     if (parsed.Length == 0) {
         warn(funcName + ": parsed is empty");
@@ -306,8 +332,9 @@ void GetRecordsAsync() {
         // print("record " + i);
 
         Json::Value@ record = parsed[i];
-        if (!JsonIsObject(record, funcName + ": record " + i))
+        if (!JsonIsObject(record, funcName + ": record " + i)) {
             continue;
+        }
 
         if (!record.HasKey("accountId")) {
             warn(funcName + ": record " + i + " missing key 'accountId'");
@@ -335,8 +362,9 @@ void GetRecordsAsync() {
         }
 
         Json::Value@ recordScore = record["recordScore"];
-        if (!JsonIsObject(recordScore, funcName + ": recordScore " + i))
+        if (!JsonIsObject(recordScore, funcName + ": recordScore " + i)) {
             continue;
+        }
 
         if (!recordScore.HasKey("time")) {
             warn(funcName + ": recordScore " + i + " missing key 'time'");
@@ -350,9 +378,9 @@ void GetRecordsAsync() {
             const uint _pb = GetPersonalBest();
             // print("_pb " + _pb + ", account.time " + account.time);
             if (true
-                && _pb != uint(-1)
-                && _pb != 0
-                && _pb != account.time
+                and _pb != uint(-1)
+                and _pb != 0
+                and _pb != account.time
             ) {
                 warn("local pb (" + Time::Format(_pb) + ") does not match api (" + Time::Format(account.time) + ")");
                 // warn("setting newLocalPb true in api");
@@ -370,8 +398,8 @@ void GetRecordsAsync() {
         // print("me.time " + me.time);
 
         if (true
-            && me.time != uint(-1)
-            && me.time != 0
+            and me.time != uint(-1)
+            and me.time != 0
         ) {
             warn("local pb (" + Time::Format(me.time) + ") is not uploaded");
             newLocalPb = true;
@@ -381,7 +409,7 @@ void GetRecordsAsync() {
     // trace(funcName + ": success");
 }
 
-void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
+void GetRegionsAsync(const string&in funcName, const string&in endpoint) {
     trace(funcName + ": starting");
 
     Net::HttpRequest@ req = GetLiveAsync(endpoint);
@@ -397,9 +425,12 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
         return;
+    }
 
     if (!parsed.HasKey("tops")) {
         warn(funcName + ": parsed missing key 'tops'");
@@ -407,8 +438,9 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ tops = parsed["tops"];
-    if (!JsonIsArray(tops, funcName + ": tops"))
+    if (!JsonIsArray(tops, funcName + ": tops")) {
         return;
+    }
 
     if (tops.Length == 0) {
         warn(funcName + ": tops is empty");
@@ -417,8 +449,9 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
 
     for (uint i = 0; i < tops.Length; i++) {
         Json::Value@ region = tops[i];
-        if (!JsonIsObject(region, funcName + ": region " + i))
+        if (!JsonIsObject(region, funcName + ": region " + i)) {
             continue;
+        }
 
         if (!region.HasKey("top")) {
             warn(funcName + ": region " + i + " missing key 'top'");
@@ -426,13 +459,15 @@ void GetRegionsAsync(const string &in funcName, const string &in endpoint) {
         }
 
         Json::Value@ regionTop = region["top"];
-        if (!JsonIsArray(regionTop, funcName + ": regionTop " + i))
+        if (!JsonIsArray(regionTop, funcName + ": regionTop " + i)) {
             continue;
+        }
 
         for (uint j = 0; j < regionTop.Length; j++) {
             Json::Value@ record = regionTop[j];
-            if (!JsonIsObject(record, funcName + ": record " + i + " " + j))
+            if (!JsonIsObject(record, funcName + ": record " + i + " " + j)) {
                 continue;
+            }
 
             if (!record.HasKey("accountId")) {
                 warn(funcName + ": record " + i + " " + j + " missing key 'accountId'");
@@ -463,7 +498,7 @@ void GetRegionsTopAsync() {
     GetRegionsAsync("GetRegionsTopAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top");
 }
 
-void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
+void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
     trace(funcName + ": starting");
 
     Net::HttpRequest@ req = GetLiveAsync(endpoint);
@@ -479,9 +514,12 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ parsed = req.Json();
-    try { Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true); } catch { }
-    if (!JsonIsObject(parsed, funcName + ": parsed"))
+    try {
+        Json::ToFile(IO::FromStorageFolder(funcName + ".json"), parsed, true);
+    } catch { }
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
         return;
+    }
 
     if (!parsed.HasKey("accountIdList")) {
         warn(funcName + ": parsed missing key 'accountIdList'");
@@ -489,8 +527,9 @@ void GetVIPsAsync(const string &in funcName, const string &in endpoint) {
     }
 
     Json::Value@ accounts = parsed["accountIdList"];
-    if (!JsonIsArray(accounts, funcName + ": accounts"))
+    if (!JsonIsArray(accounts, funcName + ": accounts")) {
         return;
+    }
 
     if (accounts.Length == 0) {
         warn(funcName + ": accounts is empty");
