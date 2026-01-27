@@ -1,6 +1,3 @@
-// c 2025-08-01
-// m 2025-08-01
-
 void RenderAll(CGameManialinkPage@ RecordsTable) {
     if (true
         and !S_Timestamp

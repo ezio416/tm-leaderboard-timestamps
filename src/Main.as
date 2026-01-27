@@ -1,6 +1,3 @@
-// c 2024-06-21
-// m 2025-08-02
-
 dictionary   accountsById;
 dictionary   accountsByName;
 string[]     accountsQueue;

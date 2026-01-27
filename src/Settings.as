@@ -1,6 +1,3 @@
-// c 2024-06-24
-// m 2025-08-02
-
 [Setting hidden] bool   S_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
 [Setting hidden] vec4   S_FontColor        = vec4(1.0f, 1.0f, 1.0f, 0.25f);
@@ -17,7 +14,7 @@
 [Setting hidden] float  S_TimestampOffsetX = 0.0f;
 [Setting hidden] float  S_TimestampOffsetY = 0.0f;
 [Setting hidden] bool   S_Warning          = true;
-// todo: add hover enlarge thing for small resolutions
+// TODO: add hover enlarge thing for small resolutions
 
 [SettingsTab name="General" icon="Cogs"]
 void Settings_General() {

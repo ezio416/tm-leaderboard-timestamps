@@ -1,6 +1,3 @@
-// c 2024-06-24
-// m 2025-08-02
-
 bool AlwaysDisplayRecords() {
     auto App = cast<CTrackMania>(GetApp());
 
