@@ -3,19 +3,14 @@ Net::HttpRequest@ GetAsync(const string&in audience, const string&in endpoint) {
 
     Net::HttpRequest@ req = NadeoServices::Get(audience, endpoint);
     req.Start();
+    
+    // Wait for completion or cancellation
     while (!req.Finished()) {
+        if (cancel) req.Cancel();
         yield();
-
-        if (cancel) {
-            req.Cancel();
-            while (!req.Finished()) {  // why do I have to do this
-                yield();
-            }
-            return null;
-        }
     }
 
-    return req;
+    return cancel ? null : req;
 }
 
 void GetClubAsync(const string&in funcName, const string&in endpoint) {
@@ -546,4 +541,286 @@ void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
     }
 
     // trace(funcName + ": success");
+}
+
+void FetchPlayersPbs() {
+    loading = true;
+    CTrackMania@ app = cast<CTrackMania>(GetApp());
+    if (app.RootMap is null || app.CurrentPlayground is null) {
+        warn("FetchPlayersPbs: no map loaded or not in a playground");
+        loading = false;
+        return;
+    }
+    string mapName = app.RootMap.MapInfo.Name;
+    trace("Fetching player PBs for map " + mapName);
+
+    // Fetch world record first
+    worldRecord = GetWorldRecord();
+
+    array<PBTime@> fetchedRecords = GetPlayersPbs();
+    if (!fetchedRecords.IsEmpty()) {
+        trace("Fetched " + fetchedRecords.Length + " player records");
+        records = fetchedRecords;
+        pbByName.DeleteAll();
+        for (uint i = 0; i < fetchedRecords.Length; i++) {
+            PBTime@ pb = fetchedRecords[i];
+
+            // Set world record
+            pb.worldRecord = worldRecord;
+
+            // Calculate delta from WR
+            if (worldRecord > 0 && pb.time > 0) {
+                pb.deltaFromWR = int(pb.time) - int(worldRecord);
+                if (pb.deltaFromWR > 0) {
+                    pb.deltaFromWRStr = "+" + FormatPBTime(uint(pb.deltaFromWR));
+                } else if (pb.deltaFromWR < 0) {
+                    pb.deltaFromWRStr = "-" + FormatPBTime(uint(-pb.deltaFromWR));
+                } else {
+                    pb.deltaFromWRStr = "±0.000";
+                }
+            }
+
+            // Get global position
+            if (pb.time > 0) {
+                pb.globalPosition = GetPlayerPosition(pb.time);
+                if (pb.globalPosition > 0) {
+                    trace("  " + pb.name + " is ranked " + FormatPosition(pb.globalPosition));
+                }
+            }
+
+            string key = SanitizeName(pb.name);
+            trace("  Player: " + pb.name + " -> Key: '" + key + "', Time: " + pb.timeStr);
+            @pbByName[key] = pb;
+        }
+    } else {
+        trace("No player records fetched");
+        records.RemoveRange(0, records.Length);
+        pbByName.DeleteAll();
+    }
+    loading = false;
+}
+
+array<PBTime@> GetPlayersPbs() {
+    CTrackMania@ app = cast<CTrackMania>(GetApp());
+    auto playground = app.CurrentPlayground;
+    if (playground is null) {
+        trace("GetPlayersPbs: playground is null");
+        return {};
+    }
+    auto mapg = app.Network.ClientManiaAppPlayground;
+    if (mapg is null) {
+        trace("GetPlayersPbs: ClientManiaAppPlayground is null");
+        return {};
+    }
+    auto scoreMgr = mapg.ScoreMgr;
+    auto userMgr = mapg.UserMgr;
+    if (scoreMgr is null || userMgr is null) {
+        trace("GetPlayersPbs: ScoreMgr or UserMgr is null");
+        return {};
+    }
+    array<CSmPlayer@> players;
+    for (uint i = 0; i < playground.Players.Length; i++) {
+        auto p = cast<CSmPlayer>(playground.Players[i]);
+        if (p !is null) players.InsertLast(p);
+    }
+    trace("GetPlayersPbs: Found " + players.Length + " players in playground");
+    if (players.Length == 0) return {};
+    MwFastBuffer<wstring> wsIds;
+    dictionary wsidToPlayer;
+    for (uint i = 0; i < players.Length; i++) {
+        auto wsid = players[i].User.WebServicesUserId;
+        wsIds.Add(wsid);
+        @wsidToPlayer[wsid] = players[i];
+    }
+    trace("GetPlayersPbs: Calling Map_GetPlayerListRecordList API");
+    CWebServicesTaskResult_MapRecordListScript@ task = scoreMgr.Map_GetPlayerListRecordList(
+        userMgr.Users[0].Id,
+        wsIds,
+        app.RootMap.MapInfo.MapUid,
+        "PersonalBest",
+        "",
+        "TimeAttack",
+        ""
+    );
+    while (task.IsProcessing) {
+        yield();
+    }
+    if (task.HasFailed || !task.HasSucceeded) {
+        warn("Failed to fetch PBs: " + task.ErrorType + ", code " + task.ErrorCode);
+        return {};
+    }
+    trace("GetPlayersPbs: API call succeeded, processing " + task.MapRecordList.Length + " records");
+    array<PBTime@> res;
+    for (uint i = 0; i < task.MapRecordList.Length; i++) {
+        auto rec = task.MapRecordList[i];
+        CSmPlayer@ p = cast<CSmPlayer@>(wsidToPlayer[rec.WebServicesUserId]);
+        if (p is null) continue;
+        res.InsertLast(PBTime(p.User.Name, rec.Time));
+        wsidToPlayer.Delete(rec.WebServicesUserId);
+    }
+    auto remaining = wsidToPlayer.GetKeys();
+    trace("GetPlayersPbs: " + remaining.Length + " players have no PB on this map");
+    for (uint i = 0; i < remaining.Length; i++) {
+        auto wsid = remaining[i];
+        CSmPlayer@ p = cast<CSmPlayer@>(wsidToPlayer[wsid]);
+        if (p is null) continue;
+        res.InsertLast(PBTime(p.User.Name, 0));
+    }
+    res.SortAsc();
+    trace("GetPlayersPbs: Returning " + res.Length + " total player records");
+    return res;
+}
+
+uint GetWorldRecord() {
+    const string funcName = "GetWorldRecord";
+    trace(funcName + ": starting");
+
+    CTrackMania@ app = cast<CTrackMania>(GetApp());
+    if (app.RootMap is null) {
+        warn(funcName + ": no map loaded");
+        return 0;
+    }
+
+    string mapUid = app.RootMap.EdChallengeId;
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top?length=1");
+
+    if (req is null) {
+        warn(funcName + ": request failed");
+        return 0;
+    }
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        warn(funcName + ": code: " + code + " | error: " + req.Error());
+        return 0;
+    }
+
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
+        return 0;
+    }
+
+    if (!parsed.HasKey("tops")) {
+        warn(funcName + ": parsed missing key 'tops'");
+        return 0;
+    }
+
+    Json::Value@ tops = parsed["tops"];
+    if (!JsonIsArray(tops, funcName + ": tops")) {
+        return 0;
+    }
+
+    if (tops.Length == 0) {
+        warn(funcName + ": tops is empty");
+        return 0;
+    }
+
+    // Get first region
+    Json::Value@ firstRegion = tops[0];
+    if (!JsonIsObject(firstRegion, funcName + ": firstRegion")) {
+        return 0;
+    }
+
+    if (!firstRegion.HasKey("top")) {
+        warn(funcName + ": firstRegion missing key 'top'");
+        return 0;
+    }
+
+    Json::Value@ top = firstRegion["top"];
+    if (!JsonIsArray(top, funcName + ": top")) {
+        return 0;
+    }
+
+    if (top.Length == 0) {
+        warn(funcName + ": top is empty");
+        return 0;
+    }
+
+    // Get first record (world record)
+    Json::Value@ wrRecord = top[0];
+    if (!JsonIsObject(wrRecord, funcName + ": wrRecord")) {
+        return 0;
+    }
+
+    if (!wrRecord.HasKey("score")) {
+        warn(funcName + ": wrRecord missing key 'score'");
+        return 0;
+    }
+
+    uint wr = uint(wrRecord["score"]);
+    trace(funcName + ": World Record is " + FormatPBTime(wr));
+    return wr;
+}
+
+uint GetPlayerPosition(uint playerTime) {
+    const string funcName = "GetPlayerPosition";
+
+    CTrackMania@ app = cast<CTrackMania>(GetApp());
+    if (app.RootMap is null) {
+        return 0;
+    }
+
+    string mapUid = app.RootMap.EdChallengeId;
+
+    Net::HttpRequest@ req = GetLiveAsync("/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/surround/0/0?score=" + playerTime);
+
+    if (req is null) {
+        return 0;
+    }
+
+    const int code = req.ResponseCode();
+    if (code != 200) {
+        return 0;
+    }
+
+    Json::Value@ parsed = req.Json();
+    if (!JsonIsObject(parsed, funcName + ": parsed")) {
+        return 0;
+    }
+
+    if (!parsed.HasKey("tops")) {
+        return 0;
+    }
+
+    Json::Value@ tops = parsed["tops"];
+    if (!JsonIsArray(tops, funcName + ": tops")) {
+        return 0;
+    }
+
+    if (tops.Length == 0) {
+        return 0;
+    }
+
+    // Get first region
+    Json::Value@ firstRegion = tops[0];
+    if (!JsonIsObject(firstRegion, funcName + ": firstRegion")) {
+        return 0;
+    }
+
+    if (!firstRegion.HasKey("top")) {
+        return 0;
+    }
+
+    Json::Value@ top = firstRegion["top"];
+    if (!JsonIsArray(top, funcName + ": top")) {
+        return 0;
+    }
+
+    if (top.Length == 0) {
+        return 0;
+    }
+
+    // Get the first (and should be only) record
+    Json::Value@ record = top[0];
+    if (!JsonIsObject(record, funcName + ": record")) {
+        return 0;
+    }
+
+    if (!record.HasKey("position")) {
+        return 0;
+    }
+
+    uint position = uint(record["position"]);
+    return position;
 }

@@ -29,6 +29,14 @@ uint         valueOverlayConfirmQuit = 0;
 uint         valueOverlaySettings    = 0;
 const uint64 waitTime                = 500;
 
+array<PBTime@> records;
+dictionary   pbByName;
+bool         loading                 = false;
+uint         lastFetchAt             = 0;
+uint         lastPlayerCount         = 0;
+uint         worldRecord             = 0;
+const uint   refreshInterval         = 60000;
+
 void Main() {
     if (!canViewRecords) {
         return;
@@ -45,6 +53,8 @@ void Main() {
     OnSettingsChanged();
 
     auto App = cast<CTrackMania>(GetApp());
+
+    startnew(PeriodicUpdateLoop);
 
     playerId = App.LocalPlayerInfo.WebServicesUserId;
     playerName = App.LocalPlayerInfo.Name;
@@ -388,6 +398,17 @@ void Render() {
     } else {
         RenderAll(RecordsTable);
     }
+
+    CGameManialinkPage@ ScoresTable = FindScoresTable(CMAP);
+    if (ScoresTable !is null) {
+        CGameManialinkFrame@ mainFrame = ScoresTable.MainFrame;
+        if (true
+            and mainFrame !is null
+            and mainFrame.Visible
+        ) {
+            RenderScores(ScoresTable);
+        }
+    }
 }
 
 void RenderMenu() {
@@ -398,5 +419,39 @@ void RenderMenu() {
         and UI::MenuItem(title, "", S_Enabled)
     ) {
         S_Enabled = !S_Enabled;
+    }
+}
+
+void PeriodicUpdateLoop() {
+    trace("PB Update loop started");
+    while (true) {
+        yield();
+
+        if (!InMap()) {
+            if (!records.IsEmpty()) {
+                trace("Not in playable map, clearing " + records.Length + " records");
+                records.RemoveRange(0, records.Length);
+                pbByName.DeleteAll();
+                lastPlayerCount = 0;
+                lastFetchAt = 0;
+                worldRecord = 0;
+            }
+            continue;
+        }
+
+        uint now = Time::Now;
+        uint playerCount = GetPlayersInServerCount();
+        bool needsRefresh = records.IsEmpty()
+            || playerCount != lastPlayerCount
+            || (lastFetchAt + refreshInterval < now);
+        if (needsRefresh && !loading) {
+            trace("PB Refresh needed - Records empty: " + records.IsEmpty()
+                + ", Player count changed: " + (playerCount != lastPlayerCount)
+                + " (old: " + lastPlayerCount + ", new: " + playerCount + ")"
+                + ", Time elapsed: " + (lastFetchAt + refreshInterval < now));
+            lastPlayerCount = playerCount;
+            lastFetchAt = now;
+            startnew(FetchPlayersPbs);
+        }
     }
 }

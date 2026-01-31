@@ -191,3 +191,68 @@ void RenderRanking(CGameManialinkControl@ control) {
         );
     }
 }
+
+CGameManialinkPage@ FindScoresTable(CGameManiaAppPlayground@ CMAP) {
+    for (uint i = 0; i < CMAP.UILayers.Length; i++) {
+        CGameUILayer@ layer = CMAP.UILayers[i];
+        if (layer is null) continue;
+        if (layer.Type != CGameUILayer::EUILayerType::Normal) continue;
+        if (layer.ManialinkPageUtf8.Length == 0) continue;
+        int start = layer.ManialinkPageUtf8.IndexOf("<");
+        int end = layer.ManialinkPageUtf8.IndexOf(">");
+        if (start < 0 || end < 0) continue;
+        string tag = layer.ManialinkPageUtf8.SubStr(start, end);
+        if (tag.Contains("_Race_ScoresTable")) {
+            return layer.LocalPage;
+        }
+    }
+    return null;
+}
+
+void RenderScores(CGameManialinkPage@ page) {
+    if (menuOpen) return;
+
+    CGameManialinkControl@ focused = page.FocusedControl;
+    if (false
+        or focused is null
+        or !focused.Visible
+    ) {
+        return;
+    }
+
+    CGameManialinkControl@ parent = focused.Parent;
+    if (parent is null) return;
+    auto frame = cast<CGameManialinkFrame>(parent);
+    if (frame is null) return;
+    auto nameLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("cmgame-player-name_label-name"));
+    if (nameLabel is null) return;
+    if (nameLabel.Value.Length == 0) return;
+    string rawName = string(nameLabel.Value);
+    string key = SanitizeName(rawName);
+    if (pbByName.Exists(key)) {
+        auto pbObj = pbByName[key];
+        auto pb = cast<PBTime>(pbObj);
+        if (pb !is null) {
+            UI::BeginTooltip();
+
+            // Always show PB time
+            if (pb.time > 0) {
+                UI::Text("PB: " + pb.timeStr);
+            } else {
+                UI::Text("PB: No record on this map");
+            }
+
+            // Show global position if available
+            if (pb.globalPosition > 0) {
+                UI::Text("Global Rank: " + FormatPosition(pb.globalPosition));
+            }
+
+            // Show delta from WR if available
+            if (pb.deltaFromWRStr.Length > 0) {
+                UI::Text("Delta from WR: " + pb.deltaFromWRStr);
+            }
+
+            UI::EndTooltip();
+        }
+    }
+}

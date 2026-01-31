@@ -2,8 +2,8 @@
 name = "Leaderboard Timestamps"
 author = "Ezio"
 category = "Overlay"
-version = "2.2.0"
+version = "2.3.0"
 siteid = 570
 
 [script]
-dependencies = [ "NadeoServices" ]
+dependencies = [ "NadeoServices", "MLFeedRaceData" ]

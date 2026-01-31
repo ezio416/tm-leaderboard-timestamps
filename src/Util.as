@@ -331,3 +331,53 @@ string UnixToIso(uint timestamp) {
 bool VerifyTimeFormat() {
     return !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)");
 }
+
+string FormatPBTime(uint ms) {
+    if (ms == 0) return "??";
+    uint minutes = ms / 60000;
+    uint seconds = (ms / 1000) % 60;
+    uint milliseconds = ms % 1000;
+    string secStr = seconds < 10 ? "0" + seconds : tostring(seconds);
+    string msStr;
+    if (milliseconds < 10) {
+        msStr = "00" + tostring(milliseconds);
+    } else if (milliseconds < 100) {
+        msStr = "0" + tostring(milliseconds);
+    } else {
+        msStr = tostring(milliseconds);
+    }
+    return tostring(minutes) + ":" + secStr + "." + msStr;
+}
+
+string SanitizeName(const string &in name) {
+    string s = Text::StripFormatCodes(name).Trim();
+    int lastIdx = s.LastIndexOf("]");
+    if (lastIdx >= 0) {
+        s = s.SubStr(lastIdx + 1).Trim();
+    }
+    return s.ToLower();
+}
+
+uint GetPlayersInServerCount() {
+    CTrackMania@ app = cast<CTrackMania>(GetApp());
+    auto cp = cast<CSmArenaClient>(app.CurrentPlayground);
+    if (cp is null) return 0;
+    return cp.Players.Length;
+}
+
+string FormatPosition(uint position) {
+    if (position == 0) return "";
+
+    // Handle special cases for 11th, 12th, 13th
+    uint lastTwoDigits = position % 100;
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+        return position + "th";
+    }
+
+    // Handle 1st, 2nd, 3rd, etc.
+    uint lastDigit = position % 10;
+    if (lastDigit == 1) return position + "st";
+    if (lastDigit == 2) return position + "nd";
+    if (lastDigit == 3) return position + "rd";
+    return position + "th";
+}
