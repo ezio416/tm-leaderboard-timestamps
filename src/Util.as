@@ -189,6 +189,8 @@ void GetTimestampsAsync() {
         return;
     }
 
+    GetServerPlayerPBAsync();
+
     trace(funcName + ": success");
     getting = false;
 }

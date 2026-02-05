@@ -8,6 +8,7 @@ const bool   canViewRecords          = Permissions::ViewRecords();
 bool         getting                 = false;
 bool         hasClubVip              = false;
 bool         hasPlayerVip            = false;
+bool         inMatchmaking           = false;
 string       lastUid;
 const string legacyLoadText          = "\\$AAAloading...";
 dictionary   mapIds;
@@ -137,6 +138,7 @@ void Main() {
             accountsByName.DeleteAll();
             medalGhosts.DeleteAll();
             surroundScore = 0;
+            // NOTE: Reset the map PB times of players
             continue;
         }
 

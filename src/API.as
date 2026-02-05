@@ -547,3 +547,37 @@ void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
 
     // trace(funcName + ": success");
 }
+
+
+void GetServerPlayerPBAsync() {
+
+    const string funcName = "GetServerPlayersAsync";
+    trace(funcName + ": starting");
+
+    auto App = cast<CTrackMania>(GetApp());
+    auto CurrentPlayground = App.CurrentPlayground;
+    auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
+
+
+    // Not sure if this is the best way to do it?
+    if (CurrentPlayground is null || ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online") {
+        return;
+    }
+
+
+    for (uint i = 0; i < CurrentPlayground.Players.Length; i++) {
+        auto player = cast<CSmPlayer>(CurrentPlayground.Players[i]);
+        if (player is null) {
+            continue;
+        }
+
+        const string accountId = player.User.WebServicesUserId;
+
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
+        }
+    }
+
+    // trace(funcName + ": success");
+}
