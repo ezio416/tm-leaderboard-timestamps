@@ -328,6 +328,8 @@ void GetRecordsAsync() {
         return;
     }
 
+    print(Json::Write(parsed));
+
     for (uint i = 0; i < parsed.Length; i++) {
         // print("record " + i);
 
@@ -362,6 +364,7 @@ void GetRecordsAsync() {
         }
 
         Json::Value@ recordScore = record["recordScore"];
+
         if (!JsonIsObject(recordScore, funcName + ": recordScore " + i)) {
             continue;
         }

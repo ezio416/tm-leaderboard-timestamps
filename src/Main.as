@@ -22,6 +22,7 @@ uint         pinnedClub              = 0;
 string       playerId;
 string       playerName;
 int          raceRecordIndex         = -1;
+int          raceLeaderboardIndex    = -1;
 const float  stdRatio                = 16.0f / 9.0f;
 uint         surroundScore           = 0;
 bool         timeFormatValid         = false;
@@ -383,13 +384,74 @@ void Render() {
 
     if (RecordsTable is null) {
         return;
-    }
+    } 
 
     if (S_Legacy) {
         RenderLegacy(RecordsTable);
     } else {
         RenderAll(RecordsTable);
     }
+
+    CGameManialinkPage@ LeaderboardTable;
+
+    if (true
+        and raceLeaderboardIndex > -1
+        and CMAP.UILayers.Length > uint(raceLeaderboardIndex)
+    ) {
+        CGameUILayer@ Layer = CMAP.UILayers[raceLeaderboardIndex];
+
+        if (true
+            and Layer !is null
+            and Layer.Type == CGameUILayer::EUILayerType::Normal
+            and Layer.ManialinkPageUtf8.Length > 0
+        ) {
+            const int start = Layer.ManialinkPageUtf8.IndexOf("<");
+            const int end = Layer.ManialinkPageUtf8.IndexOf(">");
+            if (true
+                and start > -1
+                and end > -1
+            ) {
+                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable"))
+                    @LeaderboardTable = Layer.LocalPage;
+            }
+        }
+    }
+
+    if (LeaderboardTable is null) {
+        for (uint i = 0; i < CMAP.UILayers.Length; i++) {
+            CGameUILayer@ Layer = CMAP.UILayers[i];
+
+            if (false
+                or Layer is null
+                or Layer.Type != CGameUILayer::EUILayerType::Normal
+                or Layer.ManialinkPageUtf8.Length == 0
+            ) {
+                continue;
+            }
+
+            const int start = Layer.ManialinkPageUtf8.IndexOf("<");
+            const int end = Layer.ManialinkPageUtf8.IndexOf(">");
+            if (false
+                or start == -1
+                or end == -1
+            ) {
+                continue;
+            }
+
+            if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable")) {
+                @LeaderboardTable = Layer.LocalPage;
+                raceLeaderboardIndex = i;
+                break;
+            }
+        }
+    }
+
+    if (LeaderboardTable is null) {
+        return;
+    }
+
+    RenderLeaderboard(LeaderboardTable);
+
 }
 
 void RenderMenu() {
@@ -401,4 +463,61 @@ void RenderMenu() {
     ) {
         S_Enabled = !S_Enabled;
     }
+}
+
+void RenderLeaderboard(CGameManialinkPage@ page) {
+
+    if (!L_Enabled) {
+        return;
+    }
+
+    CGameManialinkControl@ focused = page.FocusedControl;
+    
+    if (true
+        and focused !is null
+        and focused.Visible
+    ) {
+        CGameManialinkControl@ parent = focused.Parent;
+        auto frame = cast<CGameManialinkFrame>(parent);
+        
+        if (true
+            and parent !is null
+            and frame !is null
+        ) {
+            auto nameLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("cmgame-player-name_label-name"));
+            
+            if (true
+                and nameLabel !is null
+                and nameLabel.Value.Length > 0
+            ) {
+                string rawName = string(nameLabel.Value);
+                string key = SanitizeName(rawName);
+                
+                auto playerStats = cast<Account>(accountsByName[key]);
+
+                // if (pbByName.Exists(key)) {
+                //     auto pb = cast<PBTime>(pbByName[key]);
+                //     if (pb !is null) {
+                //         UI::BeginTooltip();
+                //         // tooltip content
+                //         UI::EndTooltip();
+                //     }
+                // }
+                UI::BeginTooltip();
+                UI::Text("PB: " + Time::Format(playerStats.time));
+                UI::EndTooltip();
+                // print(Time::Format(playerStats.time));
+                
+            }
+        }
+    }
+}
+
+string SanitizeName(const string &in name) {
+    string s = Text::StripFormatCodes(name).Trim();
+    int lastIdx = s.LastIndexOf("]");
+    if (lastIdx >= 0) {
+        s = s.SubStr(lastIdx + 1).Trim();
+    }
+    return s;
 }

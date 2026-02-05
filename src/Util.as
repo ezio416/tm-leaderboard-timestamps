@@ -146,6 +146,17 @@ void GetTimestampsAsync() {
         return;
     }
 
+    GetServerPlayerPBAsync();
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
+        getting = false;
+        return;
+    }
+        
+
     if (!surround) {
         GetClubTopAsync();
         if (false
@@ -176,6 +187,8 @@ void GetTimestampsAsync() {
             getting = false;
             return;
         }
+
+
     }
 
     while (!NadeoServices::IsAuthenticated(audienceCore)) {
@@ -188,8 +201,6 @@ void GetTimestampsAsync() {
         getting = false;
         return;
     }
-
-    GetServerPlayerPBAsync();
 
     trace(funcName + ": success");
     getting = false;

@@ -1,4 +1,5 @@
 [Setting hidden] bool   S_Enabled          = true;
+[Setting hidden] bool   L_Enabled          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
 [Setting hidden] vec4   S_FontColor        = vec4(1.0f, 1.0f, 1.0f, 0.25f);
 [Setting hidden] int    S_FontSize         = 14;
