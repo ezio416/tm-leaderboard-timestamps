@@ -495,6 +495,10 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                 
                 auto playerStats = cast<Account>(accountsByName[key]);
 
+                if (playerStats is null) {
+                    return;
+                }
+
                 // if (pbByName.Exists(key)) {
                 //     auto pb = cast<PBTime>(pbByName[key]);
                 //     if (pb !is null) {
@@ -504,9 +508,12 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                 //     }
                 // }
                 UI::BeginTooltip();
-                UI::Text("PB: " + Time::Format(playerStats.time));
+                if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
+                    UI::Text("PB: " + Time::Format(playerStats.time));
+                } else {
+                    UI::Text("PB: No time set");
+                }
                 UI::EndTooltip();
-                // print(Time::Format(playerStats.time));
                 
             }
         }
