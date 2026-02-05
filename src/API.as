@@ -328,8 +328,6 @@ void GetRecordsAsync() {
         return;
     }
 
-    print(Json::Write(parsed));
-
     for (uint i = 0; i < parsed.Length; i++) {
         // print("record " + i);
 

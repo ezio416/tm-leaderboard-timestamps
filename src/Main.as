@@ -489,6 +489,7 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
             if (true
                 and nameLabel !is null
                 and nameLabel.Value.Length > 0
+                and focused.ControlId.Length > 0 // Fixes the issue where it displays even when not actually hovering over a name
             ) {
                 string rawName = string(nameLabel.Value);
                 string key = SanitizeName(rawName);
@@ -508,6 +509,11 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                 //     }
                 // }
                 UI::BeginTooltip();
+
+                if (getting) {
+                    UI::Text("Retrieving data...")
+                }
+
                 if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
                     UI::Text("PB: " + Time::Format(playerStats.time));
                 } else {
