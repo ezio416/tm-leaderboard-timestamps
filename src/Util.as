@@ -361,6 +361,7 @@ string SanitizeName(const string &in name) {
 }
 
 void SetWorldRecordTime() {
+    trace("Setting WR time");
     uint lowest = uint(-1);
     auto keys = accountsById.GetKeys();
     for (uint i = 0; i < keys.Length; i++) {
