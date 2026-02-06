@@ -294,6 +294,7 @@ void GetRecordsAsync() {
     }
 
     auto App = cast<CTrackMania>(GetApp());
+
     const bool stunt = true
         and App.RootMap !is null
         and string(App.RootMap.MapType).Contains("TM_Stunt")
@@ -559,7 +560,6 @@ void GetServerPlayerPBAsync() {
     auto CurrentPlayground = App.CurrentPlayground;
     auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
 
-
     // Not sure if this is the best way to do it?
     if (CurrentPlayground is null || ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online") {
         return;
@@ -581,7 +581,7 @@ void GetServerPlayerPBAsync() {
         }
 
         Account@ account = cast<Account>(accountsById[accountId]);
-        account.inServer = true; // Setting for use in retrieving world ranking in the future
+        account.inServer = true; // Setting for use in retrieving world ranking in the future and prevent stale data
     }
 
     // trace(funcName + ": success");

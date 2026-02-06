@@ -30,6 +30,7 @@ const string title                   = "\\$0AF" + Icons::ListOl + "\\$G Leaderbo
 uint         valueOverlayConfirmQuit = 0;
 uint         valueOverlaySettings    = 0;
 const uint64 waitTime                = 500;
+uint         wrTime                  = uint(-1);
 
 void Main() {
     if (!canViewRecords) {
@@ -485,7 +486,8 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
             and frame !is null
         ) {
             auto nameLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("cmgame-player-name_label-name"));
-            
+            // auto timeLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("label-time"));
+
             if (true
                 and nameLabel !is null
                 and nameLabel.Value.Length > 0
@@ -500,32 +502,32 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                     return;
                 }
 
-                // if (pbByName.Exists(key)) {
-                //     auto pb = cast<PBTime>(pbByName[key]);
-                //     if (pb !is null) {
-                //         UI::BeginTooltip();
-                //         // tooltip content
-                //         UI::EndTooltip();
-                //     }
-                // }
-
                 if (getting) {
                     UI::BeginTooltip();
+
                     UI::Text("Retrieving data...");
+
                     UI::EndTooltip();
                     return;
-                }
-
-                UI::BeginTooltip();
-
-                if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
-                    UI::Text("PB: " + Time::Format(playerStats.time));
-                    UI::Text("World rank: " + playerStats.rank);
                 } else {
-                    UI::Text("PB: No time set");
+                    UI::BeginTooltip();
+
+                    if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
+                        UI::Text("PB: " + Time::Format(playerStats.time));
+                        uint gap = playerStats.time - wrTime;
+                        
+                        if (gap == 0) {
+                            UI::Text("Time from WR: [World Record]");
+                        } else {
+                            UI::Text("Time from WR: +" + Time::Format(gap));
+                        }
+                        // UI::Text("World rank: " + playerStats.rank);
+                    } else {
+                        UI::Text("PB: No time set");
+                    }
+
+                    UI::EndTooltip();
                 }
-                UI::EndTooltip();
-                
             }
         }
     }

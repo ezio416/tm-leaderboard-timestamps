@@ -155,7 +155,7 @@ void GetTimestampsAsync() {
         getting = false;
         return;
     }
-    
+
     if (!surround) {
         GetClubTopAsync();
         if (false
@@ -200,6 +200,8 @@ void GetTimestampsAsync() {
         getting = false;
         return;
     }
+
+    SetWorldRecordTime();
 
     trace(funcName + ": success");
     getting = false;
@@ -303,6 +305,8 @@ void Reset() {
     // pb              = 0;
     pinnedClub      = 0;
     raceRecordIndex = -1;
+    raceLeaderboardIndex = -1;
+    wrTime          = uint(-1);
 
     string[]@ ids = accountsById.GetKeys();
     string id;
@@ -314,6 +318,8 @@ void Reset() {
             accountsById.Delete(id);
             continue;
         }
+
+        account.inServer = false;
 
         if (!account.name.StartsWith("\u0092")) {
             accountsById.Delete(id);
@@ -352,4 +358,19 @@ string SanitizeName(const string &in name) {
         s = s.SubStr(lastIdx + 1).Trim();
     }
     return s;
+}
+
+void SetWorldRecordTime() {
+    uint lowest = uint(-1);
+    auto keys = accountsById.GetKeys();
+    for (uint i = 0; i < keys.Length; i++) {
+        auto account = cast<Account>(accountsById[keys[i]]);
+        print("Found valid time: " + account.time + " for " + keys[i]);
+        if (account !is null && account.time != uint(-1) && account.time < lowest) {
+            lowest = account.time;
+        }
+    }
+    
+    wrTime = lowest;
+    print("Set wr: " + wrTime);
 }
