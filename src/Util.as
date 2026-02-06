@@ -365,7 +365,7 @@ void SetWorldRecordTime() {
     auto keys = accountsById.GetKeys();
     for (uint i = 0; i < keys.Length; i++) {
         auto account = cast<Account>(accountsById[keys[i]]);
-        print("Found valid time: " + account.time + " for " + keys[i]);
+        // print("Found valid time: " + account.time + " for " + keys[i]);
         if (account !is null && account.time != uint(-1) && account.time < lowest) {
             lowest = account.time;
         }
