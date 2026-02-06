@@ -373,5 +373,4 @@ void SetWorldRecordTime() {
     }
     
     wrTime = lowest;
-    print("Set wr: " + wrTime);
 }
