@@ -499,35 +499,33 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                 auto playerStats = cast<Account>(accountsByName[key]);
 
                 if (playerStats is null) {
-                    return;
-                }
-
-                if (getting) {
-                    UI::BeginTooltip();
-
-                    UI::Text("Retrieving data...");
-
-                    UI::EndTooltip();
-                    return;
-                } else {
-                    UI::BeginTooltip();
-
-                    if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
-                        UI::Text("PB: " + Time::Format(playerStats.time));
-                        uint gap = playerStats.time - wrTime;
-                        
-                        if (gap == 0) {
-                            UI::Text("Time from WR: [World Record]");
-                        } else {
-                            UI::Text("Time from WR: +" + Time::Format(gap));
-                        }
-                        // UI::Text("World rank: " + playerStats.rank);
-                    } else {
-                        UI::Text("PB: No time set");
+                    // Only show loading if we have NO data at all
+                    if (getting) {
+                        UI::BeginTooltip();
+                        UI::Text("Loading...");
+                        UI::EndTooltip();
                     }
-
-                    UI::EndTooltip();
+                    return;
                 }
+
+                UI::BeginTooltip();
+
+                if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
+                    UI::Text("PB: " + Time::Format(playerStats.time));
+                    uint gap = playerStats.time - wrTime;
+
+                    if (gap == 0) {
+                        UI::Text("Time from WR: [World Record]");
+                    } else {
+                        UI::Text("Time from WR: +" + Time::Format(gap));
+                    }
+                    // UI::Text("World rank: " + playerStats.rank);
+                } else {
+                    UI::Text("PB: No time set");
+                }
+
+                UI::EndTooltip();
+                
             }
         }
     }
