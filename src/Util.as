@@ -155,8 +155,7 @@ void GetTimestampsAsync() {
         getting = false;
         return;
     }
-        
-
+    
     if (!surround) {
         GetClubTopAsync();
         if (false
@@ -343,4 +342,14 @@ string UnixToIso(uint timestamp) {
 // prevents most crashes
 bool VerifyTimeFormat() {
     return !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)");
+}
+
+// From the leaderboard extract the actual player name, ignoring the club tag
+string SanitizeName(const string &in name) {
+    string s = Text::StripFormatCodes(name).Trim();
+    int lastIdx = s.LastIndexOf("]");
+    if (lastIdx >= 0) {
+        s = s.SubStr(lastIdx + 1).Trim();
+    }
+    return s;
 }

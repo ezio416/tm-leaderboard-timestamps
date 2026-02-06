@@ -574,10 +574,14 @@ void GetServerPlayerPBAsync() {
 
         const string accountId = player.User.WebServicesUserId;
 
+        // Insert for retrieving later
         if (!accountsById.Exists(accountId)) {
             accountsById[accountId] = Account(accountId);
             accountsQueue.InsertLast(accountId);
         }
+
+        Account@ account = cast<Account>(accountsById[accountId]);
+        account.inServer = true; // Setting for use in retrieving world ranking in the future
     }
 
     // trace(funcName + ": success");

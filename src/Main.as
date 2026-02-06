@@ -508,14 +508,19 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                 //         UI::EndTooltip();
                 //     }
                 // }
-                UI::BeginTooltip();
 
                 if (getting) {
-                    UI::Text("Retrieving data...")
+                    UI::BeginTooltip();
+                    UI::Text("Retrieving data...");
+                    UI::EndTooltip();
+                    return;
                 }
+
+                UI::BeginTooltip();
 
                 if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
                     UI::Text("PB: " + Time::Format(playerStats.time));
+                    UI::Text("World rank: " + playerStats.rank);
                 } else {
                     UI::Text("PB: No time set");
                 }
@@ -524,13 +529,4 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
             }
         }
     }
-}
-
-string SanitizeName(const string &in name) {
-    string s = Text::StripFormatCodes(name).Trim();
-    int lastIdx = s.LastIndexOf("]");
-    if (lastIdx >= 0) {
-        s = s.SubStr(lastIdx + 1).Trim();
-    }
-    return s;
 }

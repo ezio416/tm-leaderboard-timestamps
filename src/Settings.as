@@ -28,6 +28,7 @@ void Settings_General() {
     }
 
     S_Enabled = UI::Checkbox("Enabled", S_Enabled);
+    L_Enabled = UI::Checkbox("Leaderboard hover", L_Enabled);
     S_HideWithOP = UI::Checkbox("Show/hide with Openplanet UI", S_HideWithOP);
     S_Legacy = UI::Checkbox("Legacy mode", S_Legacy);
     HoverTooltipSetting("Shows a tooltip like how it used to be (less laggy)");
@@ -150,12 +151,13 @@ void Settings_Debug() {
     UI::EndDisabled();
     HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 
-    if (UI::BeginTable("##table-debug", 6, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
+    if (UI::BeginTable("##table-debug", 7, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
         UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(0.0f, 0.0f, 0.0f, 0.5f));
 
         UI::TableSetupScrollFreeze(0, 1);
         UI::TableSetupColumn("account ID",     UI::TableColumnFlags::WidthFixed, scale * 260.0f);
         UI::TableSetupColumn("name");
+        UI::TableSetupColumn("in_server");
         UI::TableSetupColumn("time",           UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (epoch)",     UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (formatted)", UI::TableColumnFlags::WidthFixed, UI::MeasureString(UnixToIso(1727265600)).x);
@@ -187,6 +189,9 @@ void Settings_Debug() {
 
                 UI::TableNextColumn();
                 UI::Text(account.name);
+
+                UI::TableNextColumn();
+                UI::Text(tostring(account.inServer));
 
                 UI::TableNextColumn();
                 UI::Text(account.time != uint(-1) ? Time::Format(account.time) : "-");
