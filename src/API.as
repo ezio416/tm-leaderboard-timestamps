@@ -299,7 +299,7 @@ void GetRecordsAsync() {
         and string(App.RootMap.MapType).Contains("TM_Stunt")
     ;
 
-    // todo: account for many club VIPs
+    // TODO: account for many club VIPs
     Net::HttpRequest@ req = GetCoreAsync(
         "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId
         + (stunt ? "&gameMode=Stunt" : "")
