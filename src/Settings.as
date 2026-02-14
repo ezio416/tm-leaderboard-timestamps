@@ -1,5 +1,5 @@
 [Setting hidden] bool   S_Enabled          = true;
-[Setting hidden] bool   L_Enabled          = true;
+[Setting hidden] bool   S_ScoreboardHover          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
 [Setting hidden] vec4   S_FontColor        = vec4(1.0f, 1.0f, 1.0f, 0.25f);
 [Setting hidden] int    S_FontSize         = 14;
@@ -28,7 +28,7 @@ void Settings_General() {
     }
 
     S_Enabled = UI::Checkbox("Enabled", S_Enabled);
-    L_Enabled = UI::Checkbox("Leaderboard hover", L_Enabled);
+    S_ScoreboardHover = UI::Checkbox("Scoreboard hover", S_ScoreboardHover);
     S_HideWithOP = UI::Checkbox("Show/hide with Openplanet UI", S_HideWithOP);
     S_Legacy = UI::Checkbox("Legacy mode", S_Legacy);
     HoverTooltipSetting("Shows a tooltip like how it used to be (less laggy)");

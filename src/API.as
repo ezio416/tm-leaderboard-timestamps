@@ -557,10 +557,9 @@ void GetServerPlayerPBAsync() {
     trace(funcName + ": starting");
 
     auto App = cast<CTrackMania>(GetApp());
-    auto CurrentPlayground = App.CurrentPlayground;
+    auto CurrentPlayground = cast<CSmArenaClient>(App.CurrentPlayground);
     auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
 
-    // Not sure if this is the best way to do it?
     if (CurrentPlayground is null || ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online") {
         return;
     }

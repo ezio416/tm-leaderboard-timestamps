@@ -468,7 +468,7 @@ void RenderMenu() {
 
 void RenderLeaderboard(CGameManialinkPage@ page) {
 
-    if (!L_Enabled) {
+    if (!S_ScoreboardHover) {
         return;
     }
 
@@ -486,7 +486,6 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
             and frame !is null
         ) {
             auto nameLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("cmgame-player-name_label-name"));
-            // auto timeLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("label-time"));
 
             if (true
                 and nameLabel !is null
@@ -510,7 +509,7 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
 
                 UI::BeginTooltip();
 
-                if (playerStats.time != uint(-1)) { // Check that it isn't still the default of -1
+                if (playerStats.time != uint(-1)) {
                     UI::Text("PB: " + Time::Format(playerStats.time));
                     uint gap = playerStats.time - wrTime;
 
