@@ -22,7 +22,7 @@ uint         pinnedClub              = 0;
 string       playerId;
 string       playerName;
 int          raceRecordIndex         = -1;
-int          raceLeaderboardIndex    = -1;
+int          raceScoreboardIndex     = -1;
 const float  stdRatio                = 16.0f / 9.0f;
 uint         surroundScore           = 0;
 bool         timeFormatValid         = false;
@@ -397,10 +397,10 @@ void Render() {
     CGameManialinkPage@ LeaderboardTable;
 
     if (true
-        and raceLeaderboardIndex > -1
-        and CMAP.UILayers.Length > uint(raceLeaderboardIndex)
+        and raceScoreboardIndex > -1
+        and CMAP.UILayers.Length > uint(raceScoreboardIndex)
     ) {
-        CGameUILayer@ Layer = CMAP.UILayers[raceLeaderboardIndex];
+        CGameUILayer@ Layer = CMAP.UILayers[raceScoreboardIndex];
 
         if (true
             and Layer !is null
@@ -443,18 +443,13 @@ void Render() {
 
             if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable")) {
                 @LeaderboardTable = Layer.LocalPage;
-                raceLeaderboardIndex = i;
+                raceScoreboardIndex = i;
                 break;
             }
         }
     }
 
-    if (LeaderboardTable is null) {
-        return;
-    }
-
-    RenderLeaderboard(LeaderboardTable);
-
+    RenderScoreboard(LeaderboardTable);
 }
 
 void RenderMenu() {
@@ -468,13 +463,15 @@ void RenderMenu() {
     }
 }
 
-void RenderLeaderboard(CGameManialinkPage@ page) {
-
-    if (!S_ScoreboardHover) {
+void RenderScoreboard(CGameManialinkPage@ Page) {
+    if (false
+        or Page is null
+        or !S_ScoreboardHover
+    ) {
         return;
     }
 
-    CGameManialinkControl@ focused = page.FocusedControl;
+    CGameManialinkControl@ focused = Page.FocusedControl;
 
     if (true
         and focused !is null

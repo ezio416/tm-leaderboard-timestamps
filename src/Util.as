@@ -296,17 +296,17 @@ bool JsonIsObject(Json::Value@ value, const string&in name) {
 void Reset() {
     // accountsById.DeleteAll();  // don't delete all now that we support medals
     // accountsByName.DeleteAll();
-    accountsQueue   = {};
-    hasClubVip      = false;
-    hasPlayerVip    = false;
-    // lastUid         = "";
-    mapUid          = "";
-    newLocalPb      = false;
-    // pb              = 0;
-    pinnedClub      = 0;
-    raceRecordIndex = -1;
-    raceLeaderboardIndex = -1;
-    wrTime          = uint(-1);
+    accountsQueue       = {};
+    hasClubVip          = false;
+    hasPlayerVip        = false;
+    // lastUid             = "";
+    mapUid              = "";
+    newLocalPb          = false;
+    // pb                  = 0;
+    pinnedClub          = 0;
+    raceRecordIndex     = -1;
+    raceScoreboardIndex = -1;
+    wrTime              = uint(-1);
 
     string[]@ ids = accountsById.GetKeys();
     string id;
