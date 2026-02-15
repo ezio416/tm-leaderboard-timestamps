@@ -550,9 +550,7 @@ void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
     // trace(funcName + ": success");
 }
 
-
 void GetServerPlayerPBAsync() {
-
     const string funcName = "GetServerPlayersAsync";
     trace(funcName + ": starting");
 
@@ -560,10 +558,12 @@ void GetServerPlayerPBAsync() {
     auto CurrentPlayground = cast<CSmArenaClient>(App.CurrentPlayground);
     auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
 
-    if (CurrentPlayground is null || ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online") {
+    if (false
+        or CurrentPlayground is null
+        or ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online"
+    ) {
         return;
     }
-
 
     for (uint i = 0; i < CurrentPlayground.Players.Length; i++) {
         auto player = cast<CSmPlayer>(CurrentPlayground.Players[i]);
@@ -579,8 +579,8 @@ void GetServerPlayerPBAsync() {
             accountsQueue.InsertLast(accountId);
         }
 
-        Account@ account = cast<Account>(accountsById[accountId]);
-        account.inServer = true; // Setting for use in retrieving world ranking in the future and prevent stale data
+        auto account = cast<Account>(accountsById[accountId]);
+        account.inServer = true;  // Setting for use in retrieving world ranking in the future and prevent stale data
     }
 
     // trace(funcName + ": success");

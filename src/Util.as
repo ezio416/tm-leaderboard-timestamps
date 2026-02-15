@@ -335,7 +335,7 @@ string TimeFormatString(const string&in format, const int64 stamp = -1) {
     return timeFormatValid ? Time::FormatString(format, stamp) : "FORMAT ERROR";
 }
 
-string UnixToIso(uint timestamp) {
+string UnixToIso(const uint timestamp) {
     return TimeFormatString(
         S_Legacy
             ? Text::OpenplanetFormatCodes(S_TimestampFormat)
@@ -351,7 +351,7 @@ bool VerifyTimeFormat() {
 }
 
 // From the leaderboard extract the actual player name, ignoring the club tag
-string SanitizeName(const string &in name) {
+string SanitizeName(const string&in name) {
     string s = Text::StripFormatCodes(name).Trim();
     int lastIdx = s.LastIndexOf("]");
     if (lastIdx >= 0) {
@@ -363,14 +363,18 @@ string SanitizeName(const string &in name) {
 void SetWorldRecordTime() {
     trace("Setting WR time");
     uint lowest = uint(-1);
-    auto keys = accountsById.GetKeys();
+    string[]@ keys = accountsById.GetKeys();
     for (uint i = 0; i < keys.Length; i++) {
         auto account = cast<Account>(accountsById[keys[i]]);
         // print("Found valid time: " + account.time + " for " + keys[i]);
-        if (account !is null && account.time != uint(-1) && account.time < lowest) {
+        if (true
+            and account !is null
+            and account.time != uint(-1)
+            and account.time < lowest
+        ) {
             lowest = account.time;
         }
     }
-    
+
     wrTime = lowest;
 }

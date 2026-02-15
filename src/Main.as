@@ -348,8 +348,9 @@ void Render() {
                 and start > -1
                 and end > -1
             ) {
-                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_Record"))
+                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_Record")) {
                     @RecordsTable = Layer.LocalPage;
+                }
             }
         }
     }
@@ -385,7 +386,7 @@ void Render() {
 
     if (RecordsTable is null) {
         return;
-    } 
+    }
 
     if (S_Legacy) {
         RenderLegacy(RecordsTable);
@@ -412,8 +413,9 @@ void Render() {
                 and start > -1
                 and end > -1
             ) {
-                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable"))
+                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable")) {
                     @LeaderboardTable = Layer.LocalPage;
+                }
             }
         }
     }
@@ -473,14 +475,14 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
     }
 
     CGameManialinkControl@ focused = page.FocusedControl;
-    
+
     if (true
         and focused !is null
         and focused.Visible
     ) {
         CGameManialinkControl@ parent = focused.Parent;
         auto frame = cast<CGameManialinkFrame>(parent);
-        
+
         if (true
             and parent !is null
             and frame !is null
@@ -490,11 +492,11 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
             if (true
                 and nameLabel !is null
                 and nameLabel.Value.Length > 0
-                and focused.ControlId.Length > 0 // Fixes the issue where it displays even when not actually hovering over a name
+                and focused.ControlId.Length > 0  // ensure we're actually hovering over a name
             ) {
                 string rawName = string(nameLabel.Value);
                 string key = SanitizeName(rawName);
-                
+
                 auto playerStats = cast<Account>(accountsByName[key]);
 
                 if (playerStats is null) {
@@ -511,7 +513,7 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
 
                 if (playerStats.time != uint(-1)) {
                     UI::Text("PB: " + Time::Format(playerStats.time));
-                    uint gap = playerStats.time - wrTime;
+                    const uint gap = playerStats.time - wrTime;
 
                     if (gap == 0) {
                         UI::Text("Time from WR: [World Record]");
@@ -524,7 +526,6 @@ void RenderLeaderboard(CGameManialinkPage@ page) {
                 }
 
                 UI::EndTooltip();
-                
             }
         }
     }
