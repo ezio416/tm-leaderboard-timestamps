@@ -500,6 +500,42 @@ void GetRegionsTopAsync() {
     GetRegionsAsync("GetRegionsTopAsync", "/api/token/leaderboard/group/Personal_Best/map/" + mapUid + "/top");
 }
 
+void GetServerPlayerPBAsync() {
+    const string funcName = "GetServerPlayersAsync";
+    trace(funcName + ": starting");
+
+    auto App = cast<CTrackMania>(GetApp());
+    auto CurrentPlayground = cast<CSmArenaClient>(App.CurrentPlayground);
+    auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
+
+    if (false
+        or CurrentPlayground is null
+        or ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online"
+    ) {
+        return;
+    }
+
+    for (uint i = 0; i < CurrentPlayground.Players.Length; i++) {
+        auto player = cast<CSmPlayer>(CurrentPlayground.Players[i]);
+        if (player is null) {
+            continue;
+        }
+
+        const string accountId = player.User.WebServicesUserId;
+
+        // Insert for retrieving later
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
+        }
+
+        auto account = cast<Account>(accountsById[accountId]);
+        account.inServer = true;  // Setting for use in retrieving world ranking in the future and prevent stale data
+    }
+
+    // trace(funcName + ": success");
+}
+
 void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
     trace(funcName + ": starting");
 
@@ -545,42 +581,6 @@ void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
             accountsById[accountId] = Account(accountId);
             accountsQueue.InsertLast(accountId);
         }
-    }
-
-    // trace(funcName + ": success");
-}
-
-void GetServerPlayerPBAsync() {
-    const string funcName = "GetServerPlayersAsync";
-    trace(funcName + ": starting");
-
-    auto App = cast<CTrackMania>(GetApp());
-    auto CurrentPlayground = cast<CSmArenaClient>(App.CurrentPlayground);
-    auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
-
-    if (false
-        or CurrentPlayground is null
-        or ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online"
-    ) {
-        return;
-    }
-
-    for (uint i = 0; i < CurrentPlayground.Players.Length; i++) {
-        auto player = cast<CSmPlayer>(CurrentPlayground.Players[i]);
-        if (player is null) {
-            continue;
-        }
-
-        const string accountId = player.User.WebServicesUserId;
-
-        // Insert for retrieving later
-        if (!accountsById.Exists(accountId)) {
-            accountsById[accountId] = Account(accountId);
-            accountsQueue.InsertLast(accountId);
-        }
-
-        auto account = cast<Account>(accountsById[accountId]);
-        account.inServer = true;  // Setting for use in retrieving world ranking in the future and prevent stale data
     }
 
     // trace(funcName + ": success");

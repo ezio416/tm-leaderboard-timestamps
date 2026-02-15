@@ -331,28 +331,6 @@ void Reset() {
     }
 }
 
-string TimeFormatString(const string&in format, const int64 stamp = -1) {
-    return timeFormatValid ? Time::FormatString(format, stamp) : "FORMAT ERROR";
-}
-
-string UnixToIso(const uint timestamp) {
-    return TimeFormatString(
-        S_Legacy
-            ? Text::OpenplanetFormatCodes(S_TimestampFormat)
-            : Text::StripFormatCodes(S_TimestampFormat)
-        ,
-        timestamp
-    );
-}
-
-// prevents most crashes
-bool VerifyTimeFormat() {
-    return true
-        and S_TimestampFormat != "%"
-        and !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)")
-    ;
-}
-
 // From the leaderboard extract the actual player name, ignoring the club tag
 string SanitizeName(const string&in name) {
     string s = Text::StripFormatCodes(name).Trim();
@@ -380,4 +358,26 @@ void SetWorldRecordTime() {
     }
 
     wrTime = lowest;
+}
+
+string TimeFormatString(const string&in format, const int64 stamp = -1) {
+    return timeFormatValid ? Time::FormatString(format, stamp) : "FORMAT ERROR";
+}
+
+string UnixToIso(const uint timestamp) {
+    return TimeFormatString(
+        S_Legacy
+            ? Text::OpenplanetFormatCodes(S_TimestampFormat)
+            : Text::StripFormatCodes(S_TimestampFormat)
+        ,
+        timestamp
+    );
+}
+
+// prevents most crashes
+bool VerifyTimeFormat() {
+    return true
+        and S_TimestampFormat != "%"
+        and !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)")
+    ;
 }
