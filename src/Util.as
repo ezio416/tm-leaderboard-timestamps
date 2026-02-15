@@ -146,6 +146,16 @@ void GetTimestampsAsync() {
         return;
     }
 
+    GetServerPlayerPBAsync();
+    if (false
+        or cancel
+        or !InMap()
+    ) {
+        cancel = false;
+        getting = false;
+        return;
+    }
+
     if (!surround) {
         GetClubTopAsync();
         if (false
@@ -176,6 +186,8 @@ void GetTimestampsAsync() {
             getting = false;
             return;
         }
+
+
     }
 
     while (!NadeoServices::IsAuthenticated(audienceCore)) {
@@ -188,6 +200,8 @@ void GetTimestampsAsync() {
         getting = false;
         return;
     }
+
+    SetWorldRecordTime();
 
     trace(funcName + ": success");
     getting = false;
@@ -291,6 +305,8 @@ void Reset() {
     // pb              = 0;
     pinnedClub      = 0;
     raceRecordIndex = -1;
+    raceLeaderboardIndex = -1;
+    wrTime          = uint(-1);
 
     string[]@ ids = accountsById.GetKeys();
     string id;
@@ -302,6 +318,8 @@ void Reset() {
             accountsById.Delete(id);
             continue;
         }
+
+        account.inServer = false;
 
         if (!account.name.StartsWith("\u0092")) {
             accountsById.Delete(id);
@@ -330,4 +348,29 @@ string UnixToIso(uint timestamp) {
 // prevents most crashes
 bool VerifyTimeFormat() {
     return !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)");
+}
+
+// From the leaderboard extract the actual player name, ignoring the club tag
+string SanitizeName(const string &in name) {
+    string s = Text::StripFormatCodes(name).Trim();
+    int lastIdx = s.LastIndexOf("]");
+    if (lastIdx >= 0) {
+        s = s.SubStr(lastIdx + 1).Trim();
+    }
+    return s;
+}
+
+void SetWorldRecordTime() {
+    trace("Setting WR time");
+    uint lowest = uint(-1);
+    auto keys = accountsById.GetKeys();
+    for (uint i = 0; i < keys.Length; i++) {
+        auto account = cast<Account>(accountsById[keys[i]]);
+        // print("Found valid time: " + account.time + " for " + keys[i]);
+        if (account !is null && account.time != uint(-1) && account.time < lowest) {
+            lowest = account.time;
+        }
+    }
+    
+    wrTime = lowest;
 }

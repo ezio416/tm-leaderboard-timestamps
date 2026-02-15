@@ -1,4 +1,5 @@
 [Setting hidden] bool   S_Enabled          = true;
+[Setting hidden] bool   S_ScoreboardHover          = true;
 [Setting hidden] Font   S_Font             = Font::DroidSansBold;
 [Setting hidden] vec4   S_FontColor        = vec4(1.0f, 1.0f, 1.0f, 0.25f);
 [Setting hidden] int    S_FontSize         = 14;
@@ -27,6 +28,7 @@ void Settings_General() {
     }
 
     S_Enabled = UI::Checkbox("Enabled", S_Enabled);
+    S_ScoreboardHover = UI::Checkbox("Scoreboard hover", S_ScoreboardHover);
     S_HideWithOP = UI::Checkbox("Show/hide with Openplanet UI", S_HideWithOP);
     S_Legacy = UI::Checkbox("Legacy mode", S_Legacy);
     HoverTooltipSetting("Shows a tooltip like how it used to be (less laggy)");
@@ -149,12 +151,13 @@ void Settings_Debug() {
     UI::EndDisabled();
     HoverTooltipSetting("You shouldn't ever need to use this, but it's here just in case.\nIf you do, please report it to the plugin author!");
 
-    if (UI::BeginTable("##table-debug", 6, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
+    if (UI::BeginTable("##table-debug", 7, UI::TableFlags::RowBg | UI::TableFlags::ScrollY)) {
         UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(0.0f, 0.0f, 0.0f, 0.5f));
 
         UI::TableSetupScrollFreeze(0, 1);
         UI::TableSetupColumn("account ID",     UI::TableColumnFlags::WidthFixed, scale * 260.0f);
         UI::TableSetupColumn("name");
+        UI::TableSetupColumn("in_server");
         UI::TableSetupColumn("time",           UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (epoch)",     UI::TableColumnFlags::WidthFixed, scale * 80.0f);
         UI::TableSetupColumn("ts (formatted)", UI::TableColumnFlags::WidthFixed, UI::MeasureString(UnixToIso(1727265600)).x);
@@ -186,6 +189,9 @@ void Settings_Debug() {
 
                 UI::TableNextColumn();
                 UI::Text(account.name);
+
+                UI::TableNextColumn();
+                UI::Text(tostring(account.inServer));
 
                 UI::TableNextColumn();
                 UI::Text(account.time != uint(-1) ? Time::Format(account.time) : "-");

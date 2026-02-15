@@ -8,6 +8,7 @@ const bool   canViewRecords          = Permissions::ViewRecords();
 bool         getting                 = false;
 bool         hasClubVip              = false;
 bool         hasPlayerVip            = false;
+bool         inMatchmaking           = false;
 string       lastUid;
 const string legacyLoadText          = "\\$AAAloading...";
 dictionary   mapIds;
@@ -21,6 +22,7 @@ uint         pinnedClub              = 0;
 string       playerId;
 string       playerName;
 int          raceRecordIndex         = -1;
+int          raceLeaderboardIndex    = -1;
 const float  stdRatio                = 16.0f / 9.0f;
 uint         surroundScore           = 0;
 bool         timeFormatValid         = false;
@@ -28,6 +30,7 @@ const string title                   = "\\$0AF" + Icons::ListOl + "\\$G Leaderbo
 uint         valueOverlayConfirmQuit = 0;
 uint         valueOverlaySettings    = 0;
 const uint64 waitTime                = 500;
+uint         wrTime                  = uint(-1);
 
 void Main() {
     if (!canViewRecords) {
@@ -137,6 +140,7 @@ void Main() {
             accountsByName.DeleteAll();
             medalGhosts.DeleteAll();
             surroundScore = 0;
+            // NOTE: Reset the map PB times of players
             continue;
         }
 
@@ -381,13 +385,74 @@ void Render() {
 
     if (RecordsTable is null) {
         return;
-    }
+    } 
 
     if (S_Legacy) {
         RenderLegacy(RecordsTable);
     } else {
         RenderAll(RecordsTable);
     }
+
+    CGameManialinkPage@ LeaderboardTable;
+
+    if (true
+        and raceLeaderboardIndex > -1
+        and CMAP.UILayers.Length > uint(raceLeaderboardIndex)
+    ) {
+        CGameUILayer@ Layer = CMAP.UILayers[raceLeaderboardIndex];
+
+        if (true
+            and Layer !is null
+            and Layer.Type == CGameUILayer::EUILayerType::Normal
+            and Layer.ManialinkPageUtf8.Length > 0
+        ) {
+            const int start = Layer.ManialinkPageUtf8.IndexOf("<");
+            const int end = Layer.ManialinkPageUtf8.IndexOf(">");
+            if (true
+                and start > -1
+                and end > -1
+            ) {
+                if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable"))
+                    @LeaderboardTable = Layer.LocalPage;
+            }
+        }
+    }
+
+    if (LeaderboardTable is null) {
+        for (uint i = 0; i < CMAP.UILayers.Length; i++) {
+            CGameUILayer@ Layer = CMAP.UILayers[i];
+
+            if (false
+                or Layer is null
+                or Layer.Type != CGameUILayer::EUILayerType::Normal
+                or Layer.ManialinkPageUtf8.Length == 0
+            ) {
+                continue;
+            }
+
+            const int start = Layer.ManialinkPageUtf8.IndexOf("<");
+            const int end = Layer.ManialinkPageUtf8.IndexOf(">");
+            if (false
+                or start == -1
+                or end == -1
+            ) {
+                continue;
+            }
+
+            if (Layer.ManialinkPageUtf8.SubStr(start, end).Contains("_Race_ScoresTable")) {
+                @LeaderboardTable = Layer.LocalPage;
+                raceLeaderboardIndex = i;
+                break;
+            }
+        }
+    }
+
+    if (LeaderboardTable is null) {
+        return;
+    }
+
+    RenderLeaderboard(LeaderboardTable);
+
 }
 
 void RenderMenu() {
@@ -398,5 +463,69 @@ void RenderMenu() {
         and UI::MenuItem(title, "", S_Enabled)
     ) {
         S_Enabled = !S_Enabled;
+    }
+}
+
+void RenderLeaderboard(CGameManialinkPage@ page) {
+
+    if (!S_ScoreboardHover) {
+        return;
+    }
+
+    CGameManialinkControl@ focused = page.FocusedControl;
+    
+    if (true
+        and focused !is null
+        and focused.Visible
+    ) {
+        CGameManialinkControl@ parent = focused.Parent;
+        auto frame = cast<CGameManialinkFrame>(parent);
+        
+        if (true
+            and parent !is null
+            and frame !is null
+        ) {
+            auto nameLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("cmgame-player-name_label-name"));
+
+            if (true
+                and nameLabel !is null
+                and nameLabel.Value.Length > 0
+                and focused.ControlId.Length > 0 // Fixes the issue where it displays even when not actually hovering over a name
+            ) {
+                string rawName = string(nameLabel.Value);
+                string key = SanitizeName(rawName);
+                
+                auto playerStats = cast<Account>(accountsByName[key]);
+
+                if (playerStats is null) {
+                    // Only show loading if we have NO data at all
+                    if (getting) {
+                        UI::BeginTooltip();
+                        UI::Text("Loading...");
+                        UI::EndTooltip();
+                    }
+                    return;
+                }
+
+                UI::BeginTooltip();
+
+                if (playerStats.time != uint(-1)) {
+                    UI::Text("PB: " + Time::Format(playerStats.time));
+                    uint gap = playerStats.time - wrTime;
+
+                    if (gap == 0) {
+                        UI::Text("Time from WR: [World Record]");
+                    } else {
+                        UI::Text("Time from WR: +" + Time::Format(gap));
+                    }
+                    // UI::Text("World rank: " + playerStats.rank);
+                } else {
+                    UI::Text("PB: No time set");
+                }
+
+                UI::EndTooltip();
+                
+            }
+        }
     }
 }

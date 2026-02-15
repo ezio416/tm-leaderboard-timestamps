@@ -294,6 +294,7 @@ void GetRecordsAsync() {
     }
 
     auto App = cast<CTrackMania>(GetApp());
+
     const bool stunt = true
         and App.RootMap !is null
         and string(App.RootMap.MapType).Contains("TM_Stunt")
@@ -362,6 +363,7 @@ void GetRecordsAsync() {
         }
 
         Json::Value@ recordScore = record["recordScore"];
+
         if (!JsonIsObject(recordScore, funcName + ": recordScore " + i)) {
             continue;
         }
@@ -543,6 +545,42 @@ void GetVIPsAsync(const string&in funcName, const string&in endpoint) {
             accountsById[accountId] = Account(accountId);
             accountsQueue.InsertLast(accountId);
         }
+    }
+
+    // trace(funcName + ": success");
+}
+
+
+void GetServerPlayerPBAsync() {
+
+    const string funcName = "GetServerPlayersAsync";
+    trace(funcName + ": starting");
+
+    auto App = cast<CTrackMania>(GetApp());
+    auto CurrentPlayground = cast<CSmArenaClient>(App.CurrentPlayground);
+    auto ServerInfo = cast<CTrackManiaNetworkServerInfo>(App.Network.ServerInfo);
+
+    if (CurrentPlayground is null || ServerInfo.CurGameModeStr == "TM_Teams_Matchmaking_Online") {
+        return;
+    }
+
+
+    for (uint i = 0; i < CurrentPlayground.Players.Length; i++) {
+        auto player = cast<CSmPlayer>(CurrentPlayground.Players[i]);
+        if (player is null) {
+            continue;
+        }
+
+        const string accountId = player.User.WebServicesUserId;
+
+        // Insert for retrieving later
+        if (!accountsById.Exists(accountId)) {
+            accountsById[accountId] = Account(accountId);
+            accountsQueue.InsertLast(accountId);
+        }
+
+        Account@ account = cast<Account>(accountsById[accountId]);
+        account.inServer = true; // Setting for use in retrieving world ranking in the future and prevent stale data
     }
 
     // trace(funcName + ": success");
