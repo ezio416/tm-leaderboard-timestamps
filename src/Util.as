@@ -347,7 +347,10 @@ string UnixToIso(const uint timestamp) {
 
 // prevents most crashes
 bool VerifyTimeFormat() {
-    return !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)");
+    return true
+        and S_TimestampFormat != "%"
+        and !Regex::Contains(S_TimestampFormat, "(%[^aAbBcCdDeFgGhHIjmMnprRStTuUVwWxXyYzZ%])|([^%]%(%%)*$)")
+    ;
 }
 
 // From the leaderboard extract the actual player name, ignoring the club tag
