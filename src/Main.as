@@ -477,13 +477,8 @@ void RenderScoreboard(CGameManialinkPage@ Page) {
         and focused !is null
         and focused.Visible
     ) {
-        CGameManialinkControl@ parent = focused.Parent;
-        auto frame = cast<CGameManialinkFrame>(parent);
-
-        if (true
-            and parent !is null
-            and frame !is null
-        ) {
+        auto frame = cast<CGameManialinkFrame>(focused.Parent);
+        if (frame !is null) {
             auto nameLabel = cast<CGameManialinkLabel>(frame.GetFirstChild("cmgame-player-name_label-name"));
 
             if (true
