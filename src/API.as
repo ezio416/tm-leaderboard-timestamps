@@ -302,7 +302,7 @@ void GetRecordsAsync() {
 
     // TODO: account for many club VIPs
     Net::HttpRequest@ req = GetCoreAsync(
-        "/v2/mapRecords/?accountIdList=" + string::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId
+        "/v2/mapRecords/?accountIdList=" + Text::Join(accountsById.GetKeys(), "%2C") + "&mapId=" + mapId
         + (stunt ? "&gameMode=Stunt" : "")
     );
 
